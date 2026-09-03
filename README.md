@@ -43,6 +43,48 @@ mgp1000_WES.sh - full run script for MGP1000. If using .crams produced by Sarek,
 Other reference files needed are provided in References folder in RDSS
 
 
+**KIR PIPELINE**
+
+KIR Calling is run on T1K or KIRCLE
+
+**Installation**
+*T1K*
+To install T1K you will need to first install conda : https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html
+
+then you will need to create an appropriate conda environment to run T1K: 
+
+conda env create -f t1k_environment.yml 
+
+T1K runs on BAMs, which you already have from previous pipeline runs
+
+*KIRCLE*
+To install KIRCLE, download the KIRCLE zip folder that is in RDSS. 
+
+**Scripts**
+t1k.sh - script to run T1K for KIR Calling 
+KIRCLE.sh  - script to run KIRCLE for KIR Calling 
+
+**Additional files needed**
+Download the T1K zip folder on RDSS and thats where the appropriate reference files are. Change the directory in your code to point to there. 
+
+Reference files for KIRCLE are also in the zipped KIRCLE Folder. Change the BLASTDB export path in the script accordingly
+
+**HLA PIPELINE**
+
+HLA Calling is run using T1K, Nextflow HLATyping (Optitype and HLAHD) and HLA-LA
+
+**Installations**
+
+T1K - nothing new to install, use the same installin as the one we used to run KIR
+
+Nextflow HLATyping - a bit complicated. Need your own 
+
+**Scripts**
+t1k_hla.sh - script to run T1K for HLA calling
+
+
+
+
 
 
 
