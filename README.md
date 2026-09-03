@@ -3,6 +3,11 @@ Collection of tools and pipelines used to analyze paired tumour-normal WES data 
 
 Doesn't yet include parallelization..
 
+Other files can be found on the RDSS: 
+
+Please let me know if you need access and I can add you! 
+
+
 **SAREK PIPELINE**
 
 **Scripts**
@@ -114,7 +119,32 @@ That is basically the end of the basic calling pipelines... now onto some downst
 Pyclone is a tool used to infer the clonal population structure of heterogeneous cancer samples using deep next-generation sequencing (NGS) data
 
 Questions: to use **filtered** somatic mutation calls based on the MGP1000 pipeline where we only use mutations that are called in 2/3 tools - between Strelka, Mutect2 and Varscan? 
+
 Or just use all filtered mutations from Mutect2 only - based on GATK Gold Standards??????
+
+**Installation**
+
+Again need to use conda to install an environment:
+
+**Scripts**
+Input needed is a **vcf file of somatic mutations, purityploidy file from ASCAT output, and also cnv file from ASCAT output (these were run using Sarek)**. Need to run this on both BSL and Followup/PRG timepoint together. Make sure you have all of these available.
+
+1. First run pyclone_counts.sh
+2. Run pileup.sh on the resulting files from step 1
+3. Run  build_pyclone_input.sh with Rscript build_pyclone_input.R
+4. Run pyclone_run.sh on the output from 4
+5. Summarize and visualize plots of the results from 4 using summarize_pyclone.sh with Rscript summarize_pyclone.R 
+
+
+
+
+
+**Mutational Signature Calling**
+
+Again the same question of what set of mutations to use: to use **filtered** somatic mutation calls based on the MGP1000 pipeline where we only use mutations that are called in 2/3 tools - between Strelka, Mutect2 and Varscan? 
+
+Or just use all filtered mutations from Mutect2 only - based on GATK Gold Standards??????
+
 
 
 
