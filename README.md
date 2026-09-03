@@ -129,13 +129,16 @@ conda env create -f pyclone_environment.yml
 
 
 **Scripts**
+
+I have only written this for mutect2 outputs (unfiltered)...
+
 Input needed is a **vcf file of somatic mutations, purityploidy file from ASCAT output, and also cnv file from ASCAT output (these were run using Sarek)**. Need to run this on both BSL and Followup/PRG timepoint together. Make sure you have all of these available.
 
 1. First run pyclone_counts.sh
-2. Run pileup.sh on the resulting files from step 1
-3. Run  build_pyclone_input.sh with Rscript build_pyclone_input.R. you will need a manifest.tsv file (example uploaded)
-4. Run pyclone_run.sh on the output from 4
-5. Summarize and visualize plots of the results from 4 using summarize_pyclone.sh with Rscript summarize_pyclone.R 
+3. Run pileup.sh on the resulting files from step 1
+4. Run  build_pyclone_input.sh with Rscript build_pyclone_input.R. you will need a manifest.tsv file (example uploaded)
+5. Run pyclone_run.sh on the output from 4
+6. Summarize and visualize plots of the results from 4 using summarize_pyclone.sh with Rscript summarize_pyclone.R 
 
 
 
@@ -144,6 +147,13 @@ Input needed is a **vcf file of somatic mutations, purityploidy file from ASCAT 
 Again the same question of what set of mutations to use: to use **filtered** somatic mutation calls based on the MGP1000 pipeline where we only use mutations that are called in 2/3 tools - between Strelka, Mutect2 and Varscan? 
 
 Or just use all filtered mutations from Mutect2 only - based on GATK Gold Standards??????
+
+**Scripts**
+
+merging_results.sh - I have provided edited code (thanks Filippo) to merge and filter MGP1000 calls to only those that are called in 2/3 tools used. These produce a .tsv file that you can then use to as input to run in MMSig (R based)
+
+Running MMSig - no script for this. You can install and read vignette on https://github.com/evenrus/mmsig. Very simple straightforward and easy. **However note that we are using hg38 and the default is hg19. Just make sure to change parameters when running mmsig**
+
 
 
 
