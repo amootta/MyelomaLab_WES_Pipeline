@@ -125,6 +125,8 @@ Or just use all filtered mutations from Mutect2 only - based on GATK Gold Standa
 **Installation**
 
 Again need to use conda to install an environment:
+conda env create -f pyclone_environment.yml 
+
 
 **Scripts**
 Input needed is a **vcf file of somatic mutations, purityploidy file from ASCAT output, and also cnv file from ASCAT output (these were run using Sarek)**. Need to run this on both BSL and Followup/PRG timepoint together. Make sure you have all of these available.
