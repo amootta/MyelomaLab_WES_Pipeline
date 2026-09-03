@@ -131,11 +131,9 @@ Input needed is a **vcf file of somatic mutations, purityploidy file from ASCAT 
 
 1. First run pyclone_counts.sh
 2. Run pileup.sh on the resulting files from step 1
-3. Run  build_pyclone_input.sh with Rscript build_pyclone_input.R
+3. Run  build_pyclone_input.sh with Rscript build_pyclone_input.R. you will need a manifest.tsv file (example uploaded)
 4. Run pyclone_run.sh on the output from 4
 5. Summarize and visualize plots of the results from 4 using summarize_pyclone.sh with Rscript summarize_pyclone.R 
-
-
 
 
 
