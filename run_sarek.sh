@@ -7,6 +7,7 @@
 ########SCRIPT TO RUN SAREK PIPELINE ####################
 ## Please change directories accordingly
 ## Uploaded all necessary reference files as well 
+## Need to install nextflow manually: https://docs.seqera.io/nextflow/install
 
 module load java/temurin-17/17.0.2_8
 
