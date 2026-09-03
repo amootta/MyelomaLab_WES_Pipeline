@@ -69,18 +69,35 @@ Download the T1K zip folder on RDSS and thats where the appropriate reference fi
 
 Reference files for KIRCLE are also in the zipped KIRCLE Folder. Change the BLASTDB export path in the script accordingly
 
+
 **HLA PIPELINE**
 
 HLA Calling is run using T1K, Nextflow HLATyping (Optitype and HLAHD) and HLA-LA
 
 **Installations**
 
-T1K - nothing new to install, use the same installin as the one we used to run KIR
+T1K - nothing new to install, use the same installation as the one we used to run KIR
 
-Nextflow HLATyping - a bit complicated. Need your own 
+Nextflow HLATyping - need to download the hlahd.1.7.1.tar.gz from RDSS. Need to download the config files to run. 
+
+HLA-LA  - need to use conda again to install this:
+
+conda env create -f hlala_environment.yml 
+
+
 
 **Scripts**
 t1k_hla.sh - script to run T1K for HLA calling
+
+nextflow_HLA.sh - script to run the Nextflow HLAtyping pipeline using Optitype and HLAHD
+
+
+**Additional files needed:**
+
+hlatyping_fix.config - config file tailored to UCL Myriad (need this!)for Nextflow HLATyping pipeline
+
+samplesheet_hla.csv - sample sheet needed to run hla calling from BAMs for Nextflow HLATyping pipeline
+
 
 
 
