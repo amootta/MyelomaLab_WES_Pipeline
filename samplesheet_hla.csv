@@ -1,0 +1,7 @@
+sample,bam,seq_type
+"COS_001_003	",/myriadfs/home/regma03/Scratch/WES_tumor_batch1/preprocessing/recalibrated/COS_001_003_PBMC/COS_001_003_PBMC.recal.bam,dna
+COS_001_037,/myriadfs/home/regma03/Scratch/WES_tumor_batch1/preprocessing/recalibrated/COS_001_037_PBMC/COS_001_037_PBMC.recal.bam,dna
+COS_001_063,/myriadfs/home/regma03/Scratch/WES_tumor_batch1/preprocessing/recalibrated/COS_001_063_PBMC/COS_001_063_PBMC.recal.bam,dna
+COS_003_009,/myriadfs/home/regma03/Scratch/WES_tumor_batch1/preprocessing/recalibrated/COS_003_009_PBMC/COS_003_009_PBMC.recal.bam,dna
+COS_001_018,/myriadfs/home/regma03/Scratch/WES_tumor_batch1/HLA/COS_001_018_G/COS_001_018_G.recal.bam,dna
+COS_004_003,/myriadfs/home/regma03/Scratch/WES_tumor_batch1/HLA/COS_004_003_G/COS_004_003_G.recal.bam,dna
