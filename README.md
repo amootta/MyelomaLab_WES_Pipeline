@@ -9,7 +9,7 @@ Doesn't yet include parallelization..
 
 run_sarek.sh - run sarek pipeline from fastq (from scratch) or from available bam/cram
 
-filter_annotate.sh - script to annotate outputs from mutect2 (from vcfs) using funcotator (GATK pipeline)
+filter_annotate.sh - script to annotate outputs from mutect2 (from vcfs) using funcotator (GATK pipeline). Also produces a filtered VCF file (Mutect2 PASS Filter) 
 
 **Additional files needed:**
 
@@ -76,20 +76,27 @@ HLA Calling is run using T1K, Nextflow HLATyping (Optitype and HLAHD) and HLA-LA
 
 **Installations**
 
-T1K - nothing new to install, use the same installation as the one we used to run KIR
+*T1K* - nothing new to install, use the same installation as the one we used to run KIR
 
-Nextflow HLATyping - need to download the hlahd.1.7.1.tar.gz from RDSS. Need to download the config files to run. 
+*Nextflow HLATyping* - need to download the hlahd.1.7.1.tar.gz from RDSS. Need to download the config files to run. 
 
-HLA-LA  - need to use conda again to install this:
+*HLA-LA*  - need to use conda again to install this:
 
 conda env create -f hlala_environment.yml 
 
+AFTERWARDS (slightly complicated). After having installed the conda environment locally, please copy this folder into the appropriate path as below (change to your user/where the environment is installed locally on your myriad user login):
+
+/home/regma03/Scratch/conda/envs/hla-la/opt/hla-la/graphs/PRG_MHC_GRCh38_withIMGT
+
+The PRG_MHC_GRCh38_withIMGT folder is in RDSS for you to download and add to that exact path
 
 
 **Scripts**
 t1k_hla.sh - script to run T1K for HLA calling
 
 nextflow_HLA.sh - script to run the Nextflow HLAtyping pipeline using Optitype and HLAHD
+
+hla_la.sh - script to run HLA-LA pipeline 
 
 
 **Additional files needed:**
@@ -98,6 +105,16 @@ hlatyping_fix.config - config file tailored to UCL Myriad (need this!)for Nextfl
 
 samplesheet_hla.csv - sample sheet needed to run hla calling from BAMs for Nextflow HLATyping pipeline
 
+
+##########################################################################################################################
+
+That is basically the end of the basic calling pipelines... now onto some downstream stuff! 
+
+**Pyclone**
+Pyclone is a tool used to infer the clonal population structure of heterogeneous cancer samples using deep next-generation sequencing (NGS) data
+
+Questions: to use **filtered** somatic mutation calls based on the MGP1000 pipeline where we only use mutations that are called in 2/3 tools - between Strelka, Mutect2 and Varscan? 
+Or just use all filtered mutations from Mutect2 only - based on GATK Gold Standards??????
 
 
 
