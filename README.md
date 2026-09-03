@@ -3,7 +3,7 @@ Collection of tools and pipelines used to analyze paired tumour-normal WES data 
 
 Doesn't yet include parallelization..
 
-Other files can be found on the RDSS: 
+Other files can be found on the RDSS: /rdss/rd02/ritd-ag-project-rd028n-amira43/Shared_Scripts for **big packages and installation** and /rdss/rd02/ritd-ag-project-rd028n-amira43/reference_files for **Reference Files**
 
 Please let me know if you need access and I can add you! 
 
