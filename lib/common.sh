@@ -117,6 +117,20 @@ mutect2_filtered() { echo "$MUTECT2_DIR/$(pair_id "$1" "$2").mutect2_filtered.vc
 ascat_cnv()        { local id; id=$(pair_id "$1" "$2"); echo "$SAREK_DIR/variant_calling/ascat/$id/$id.cnvs.txt"; }
 ascat_pp()         { local id; id=$(pair_id "$1" "$2"); echo "$SAREK_DIR/variant_calling/ascat/$id/$id.purityploidy.txt"; }
 
+# consensus_vcf <tumour>: stage 03's 2-of-3 consensus VCF for this tumour.
+# VCF tumour names can carry suffixes (COS_001_063_PRG_merged), so each VCF
+# goes to the LONGEST tumour sample ID its name starts with. Prints nothing
+# if there is no match.
+consensus_vcf() {
+    local v t best
+    for v in "$CONSENSUS_DIR"/vcf/*.vcf; do
+        [[ -e $v ]] || return 0
+        t=$(grep -m1 '^#CHROM' "$v" | cut -f10)
+        best=$(tumours | cut -f2 | awk -v t="$t" 'index(t, $0) == 1 && length($0) > length(b) { b = $0 } END { print b }')
+        if [[ $best == "$1" ]]; then echo "$v"; return 0; fi
+    done
+}
+
 # -----------------------------------------------------------------------------
 # Job helpers
 # -----------------------------------------------------------------------------

@@ -11,10 +11,9 @@ IFS=$'\t' read -r p n < <(task_line < "$1")
 use_conda t1k
 
 mkdir -p "$HLA_DIR/T1K"
-# TODO: T1K's presets are hla / hla-wgs / kir-wgs / kir-wes. hla-wgs is what was
-#       used before; for exome data plain `hla` may be the better fit.
+# Preset `hla` (general/exome). The earlier runs used hla-wgs.
 run-t1k -b "$(recal_bam "$n")" \
-    --preset hla-wgs \
+    --preset hla \
     -f "$T1K_DIR/hlaidx/hlaidx_dna_seq.fa" \
     -c "$T1K_DIR/hlaidx/hlaidx_dna_coord.fa" \
     -o "$HLA_DIR/T1K/${p}_HLA" \

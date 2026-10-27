@@ -25,7 +25,7 @@ flowchart LR
   cvcf --> phla[07 pvacseq hla]
   hcol --> phla
   phla --> prun[07 pvacseq run]
-  m2f --> py[08 pyclone]
+  cvcf --> py[08 pyclone]
   ascat --> py
   cram --> py
   isec --> sig[09 signatures]
@@ -46,10 +46,12 @@ Generated sheets: `$SAMPLESHEET_DIR/sarek_fastq.csv`, `sarek_cram.csv`.
 
 | Step | Needs | Writes |
 |---|---|---|
-| `somatic` | recal bams for every pair | bams linked into `$MGP1000_DIR/input/preprocessedBams/`, sheet `$SAMPLESHEET_DIR/mgp1000.csv`; mgp1000 writes `$MGP1000_SOMATIC_DIR/{mutect,strelka,varscan,consensus}/` |
+| `somatic` | recal bams for every pair | bams hard-linked as `$MGP1000_INPUT_DIR/<S>.bam` (+ `.bai`), sheet `$SAMPLESHEET_DIR/mgp1000_somatic.csv`; mgp1000 writes `$MGP1000_SOMATIC_DIR/{mutect,strelka,varscan,consensus,...}/` |
 
-**TODO:** the mgp1000 command itself still has to be pasted into
-`stages/02_mgp1000/mgp1000.job.sh`.
+The tools mgp1000 runs are set by `MGP1000_SOMATIC_TOOLS` in the config
+(Mutect2, Strelka, VarScan, Manta, Delly, IgCaller on; Battenberg, SvABA,
+CaVEMan, Conpair and the telomere tools off). The germline and
+preprocessing-from-FASTQ commands are kept, commented, in `mgp1000.job.sh`.
 
 ## 03 consensus
 
@@ -97,9 +99,9 @@ by at least 2 of the 3 callers.
 
 | Step | Needs | Writes |
 |---|---|---|
-| `run` | for every tumour: `$MUTECT2_DIR/<T>_vs_<N>.mutect2_filtered.vcf.gz`, ASCAT `*.cnvs.txt` + `*.purityploidy.txt`, recal cram | `$PYCLONE_DIR/<P>/`: `manifest.tsv`, `<P>.union_sites.tsv`, `counts/<T>.forced.tsv`, `<P>.pyclone_vi.tsv`, `<P>.h5`, `<P>.results.tsv`, cluster table + CCF plot |
+| `run` | for every tumour: its 2-of-3 consensus VCF in `$CONSENSUS_DIR/vcf/` (stage 03 `vcf`), ASCAT `*.cnvs.txt` + `*.purityploidy.txt`, recal cram | `$PYCLONE_DIR/<P>/`: `manifest.tsv`, `<P>.union_sites.tsv`, `counts/<T>.forced.tsv`, `<P>.pyclone_vi.tsv`, `<P>.h5`, `<P>.results.tsv`, cluster table + CCF plot |
 
-The job runs, in order: the union of PASS SNVs across timepoints, forced
+The job runs, in order: the union of consensus SNVs across timepoints, forced
 allele counts at every union site in every sample (alleleCounter), the
 PyClone-VI table, the fit, then the summary.
 

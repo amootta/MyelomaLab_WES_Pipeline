@@ -15,7 +15,7 @@ FASTQ ──► 01 sarek ──► recal crams/bams, Mutect2, Strelka, ASCAT, CN
                 ├──► 04 HLA   (T1K, OptiType/HLA-HD, HLA-LA)  on normals
                 ├──► 05 KIR   (T1K, KIRCLE)                   on normals
                 ├──► 06 IgCaller                              per pair
-                └──► 08 PyClone-VI  (Mutect2 + ASCAT)         per patient
+                └──► 08 PyClone-VI  (03 consensus + ASCAT)    per patient
 ```
 
 **[docs/STAGES.md](docs/STAGES.md)** lists, for every step, what it reads,
@@ -64,7 +64,7 @@ A new batch: copy `config/pipeline.config` and `config/samples.tsv`, change
 | `patient` | e.g. `COS_001_037`. HLA/KIR results are keyed by this |
 | `sample` | unique per sample, e.g. `COS_001_037_BL`; lanes of one sample share it |
 | `status` | `0` normal, `1` tumour |
-| `sex` | `XX` / `XY` (used by sarek and PyClone). **TODO: every row says XX, so check this** |
+| `sex` | `XX` / `XY`, used by sarek and PyClone. Defaults to `XX`; edit it per patient where known |
 | `lane`, `fastq_1`, `fastq_2` | for `wes.sh sarek fastq` |
 | `cram` | optional: use this cram instead of sarek's (e.g. a manually merged one) |
 | `bam` | optional: use this bam instead of sarek's (e.g. germline bams from elsewhere) |
@@ -94,12 +94,16 @@ Point the matching variable in `config/pipeline.config` at each one.
 | Funcotator data sources | https://console.cloud.google.com/storage/browser/gcp-public-data--broad-references/funcotator (also on RDSS) | `FUNCOTATOR_DS` |
 | MMSig | in R: https://github.com/evenrus/mmsig (calls are **hg38**; mmsig defaults to hg19) | — |
 
-## Open questions (marked `TODO` in the code)
+## Analysis choices
 
-- `mgp1000_WES.sh` and `nextflow_HLA.sh` were never committed, so the mgp1000
-  and nf-core/hlatyping commands need filling in or checking
-  (`stages/02_mgp1000/mgp1000.job.sh`, `stages/04_hla/hlatyping.job.sh`).
-- PyClone and MMSig: Mutect2-only calls vs the mgp1000 2-of-3 consensus?
-  PyClone currently uses Mutect2, MMSig uses the consensus.
-- Which HLA caller feeds pVACseq (`HLA_SOURCE_FOR_PVACSEQ`, default OptiType)?
+- PyClone, MMSig and pVACseq all use the mgp1000 2-of-3 consensus SNVs
+  (`CONSENSUS_MIN_CALLERS`). Mutect2-only filtered calls + Funcotator MAFs are
+  still produced by `wes.sh sarek filter_mutect2`.
+- pVACseq takes OptiType's class I typing (`HLA_SOURCE_FOR_PVACSEQ`).
+
+## Still to check (marked `TODO` in the code)
+
+- `nextflow_HLA.sh` was never committed, so the nf-core/hlatyping command
+  (release, HLA-HD switch) in `stages/04_hla/hlatyping.job.sh` is a best guess.
+- A few mgp1000 output folder/file names in stage 03 are assumed, not seen.
 - `grep -rn TODO .` lists the rest.
