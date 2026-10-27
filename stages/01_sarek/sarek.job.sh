@@ -36,5 +36,3 @@ nextflow run nf-core/sarek ${SAREK_VERSION:+-r "$SAREK_VERSION"} \
     --chr_dir "$CONTROLFREEC_CHR_DIR" \
     --email "$EMAIL" \
     --max_cpus 8
-# TODO: --wes without --intervals means sarek uses no capture BED. If the
-#       exome kit's target BED is on the RDSS, add --intervals <bed> here.
