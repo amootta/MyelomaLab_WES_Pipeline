@@ -69,6 +69,8 @@ To install KIRCLE, download the KIRCLE zip folder that is in RDSS.
 t1k.sh - script to run T1K for KIR Calling 
 KIRCLE.sh  - script to run KIRCLE for KIR Calling 
 
+Can also run KIR concordance.py to find out across all samples run the concordance between different tools
+
 **Additional files needed**
 Download the T1K zip folder on RDSS and thats where the appropriate reference files are. Change the directory in your code to point to there. 
 
@@ -103,6 +105,7 @@ nextflow_HLA.sh - script to run the Nextflow HLAtyping pipeline using Optitype a
 
 hla_la.sh - script to run HLA-LA pipeline 
 
+Can also run hla concordance.py to find out across all samples run the concordance between different tools
 
 **Additional files needed:**
 
@@ -155,6 +158,8 @@ merging_results.sh - I have provided edited code (thanks Filippo) to merge and f
 Running MMSig - no script for this. You can install and read vignette on https://github.com/evenrus/mmsig. Very simple straightforward and easy. **However note that we are using hg38 and the default is hg19. Just make sure to change parameters when running mmsig**
 
 
+**PYCLONE**
+read the pyclone.txt file to see how this is run. 
 
 
 
