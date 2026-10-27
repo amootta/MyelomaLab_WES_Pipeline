@@ -24,9 +24,10 @@ extra=()
 [[ -e $dir/$id.mutect2.segmentation.table ]]  && extra+=(--tumor-segmentation "$dir/$id.mutect2.segmentation.table")
 [[ -e $dir/$id.mutect2.artifactprior.tar.gz ]] && extra+=(--ob-priors "$dir/$id.mutect2.artifactprior.tar.gz")
 log "$id: extra filter inputs: ${extra[*]:-none}"
-# TODO: sarek already writes $id.mutect2.filtered.vcf.gz with its own
-#       FilterMutectCalls run. This re-filter only adds the 0.01 VAF floor and
-#       the MQ/BQ 20 thresholds -- confirm that is still wanted.
+# Deliberately re-filters sarek's raw calls (rather than using its own
+# *.mutect2.filtered.vcf.gz) to apply the lab's VAF >= 0.01 and MQ/BQ >= 20
+# thresholds before Funcotator. Sarek 3.8.1 writes only the artifact prior
+# here (no contamination/segmentation tables), so --ob-priors is the one used.
 
 gatk FilterMutectCalls \
     -R "$REF_FASTA" \
