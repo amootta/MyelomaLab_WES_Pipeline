@@ -1,0 +1,11 @@
+# conda env create -f envs/hla-la.yml
+# Used by stage 04 (hlala). The previous file was empty. After creating the
+# env, copy PRG_MHC_GRCh38_withIMGT from the RDSS into
+#   <env prefix>/opt/hla-la/graphs/PRG_MHC_GRCh38_withIMGT
+# TODO: pin versions with `conda env export --no-builds` from the working env.
+name: hla-la
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - hla-la

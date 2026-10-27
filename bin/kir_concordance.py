@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""
+r"""
 kir_concordance.py
 
 Compare T1K KIR genotype TSVs (one file per sample) against a "true" (e.g.

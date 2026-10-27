@@ -1,3 +1,4 @@
+# conda env create -f envs/t1k.yml   (stages 04 and 05)
 name: t1k
 channels:
   - conda-forge
@@ -42,4 +43,3 @@ dependencies:
   - tk=8.6.13
   - tzdata=2026c
   - zstd=1.5.7
-prefix: /home/regma03/Scratch/conda/envs/t1k
