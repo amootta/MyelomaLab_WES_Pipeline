@@ -3,7 +3,7 @@
 # then gather the calls in one place for the concordance report and pVACseq.
 #
 #   ./wes.sh hla t1k          T1K (hlaidx)                      -> HLA/T1K/<patient>_HLA_genotype.tsv
-#   ./wes.sh hla hlatyping    nf-core/hlatyping (OptiType, HLA-HD) -> HLA/hlatyping/
+#   ./wes.sh hla hlatyping    patched nf-core/hlatyping (OptiType, HLA-HD) -> HLA/hlatyping/
 #   ./wes.sh hla hlala        HLA-LA                            -> HLA/HLA_LA/<patient>/
 #   ./wes.sh hla collect      link every caller's per-patient file into HLA/calls/<caller>/
 #   ./wes.sh hla concordance  HLA/HLA_typing_comparison.xlsx (needs HLA_TRUTH in the config)
@@ -29,6 +29,7 @@ step_t1k() {
 step_hlatyping() {
     local list sheet=$SAMPLESHEET_DIR/hlatyping.csv p n
     list=$(normal_list)
+    need "$HLATYPING_DIR/main.nf" "$HLAHD_TARBALL"
     echo "sample,bam,seq_type" > "$sheet"
     while IFS=$'\t' read -r p n; do echo "$p,$(recal_bam "$n"),dna"; done < "$list" >> "$sheet"
     log "wrote $sheet"
@@ -48,10 +49,11 @@ step_collect() {
     while read -r p; do
         f=$HLA_DIR/T1K/${p}_HLA_genotype.tsv
         [[ -e $f ]] && ln -sf "$f" "$calls/t1k/${p}_HLA_genotype.tsv" && n=$((n + 1))
-        f=$(find "$HLA_DIR/hlatyping" -path "*optitype*" -name "${p}*_result.tsv" 2>/dev/null | head -1)
+        # all of HLA_DIR, not just hlatyping/: earlier runs used --outdir HLA/
+        f=$(find "$HLA_DIR" -path "$calls" -prune -o -path "*optitype*" -name "${p}*_result.tsv" -print 2>/dev/null | head -1)
         [[ -n $f ]] && ln -sf "$f" "$calls/optitype/${p}_result.tsv" && n=$((n + 1))
-        # TODO: confirm the HLA-HD final-result file name nf-core/hlatyping writes
-        f=$(find "$HLA_DIR/hlatyping" -path "*hlahd*" -name "${p}*final*.txt" 2>/dev/null | head -1)
+        # HLA-HD writes <sample>/result/<sample>_final.result.txt
+        f=$(find "$HLA_DIR" -path "$calls" -prune -o -path "*hlahd*" -name "${p}*final*.txt" -print 2>/dev/null | head -1)
         [[ -n $f ]] && ln -sf "$f" "$calls/hlahd/${p}_hlahd_final.txt" && n=$((n + 1))
         f=$HLA_DIR/HLA_LA/$p/hla/R1_bestguess_G.txt
         [[ -e $f ]] && ln -sf "$f" "$calls/hlala/${p}_bestguess_G.txt" && n=$((n + 1))

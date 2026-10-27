@@ -2,22 +2,22 @@
 #$ -l h_rt=40:00:00
 #$ -l mem=16G
 #$ -pe smp 1
-# Nextflow head job for nf-core/hlatyping (OptiType + HLA-HD).
+# Nextflow head job for the patched nf-core/hlatyping checkout (OptiType + HLA-HD).
+# From nextflow_HLA.sh. Runs the local checkout in HLATYPING_DIR, not the
+# released pipeline.
 # usage: hlatyping.job.sh <hlatyping.csv>
 source "$PIPELINE_DIR/lib/common.sh"
 sheet=$1
 nextflow_env
 
 mkdir -p "$HLA_DIR/hlatyping"
-cd "$HLA_DIR/hlatyping"
-# TODO: nextflow_HLA.sh was never committed. Check the release and how HLA-HD
-#       was switched on (the hlahd.1.7.1.tar.gz from the RDSS), and pin
-#       HLATYPING_VERSION in the config.
-nextflow run nf-core/hlatyping ${HLATYPING_VERSION:+-r "$HLATYPING_VERSION"} \
+cd "$HLATYPING_DIR"
+nextflow run . \
     -profile ucl_myriad \
     -c "$PIPELINE_DIR/config/nextflow/hlatyping_fix.config" \
     -resume \
     --input "$sheet" \
     --outdir "$HLA_DIR/hlatyping" \
-    --genome GRCh38 \
-    --email "$EMAIL"
+    --tools optitype,hlahd \
+    --hlahd_path "$HLAHD_TARBALL" \
+    --hlahd_update_reference_dict true

@@ -86,7 +86,8 @@ Point the matching variable in `config/pipeline.config` at each one.
 | T1K | `conda env create -f envs/t1k.yml` + T1K folder from RDSS (has `hlaidx/`, `kiridx/`) | `T1K_DIR` |
 | KIRCLE | KIRCLE zip from RDSS | `KIRCLE_DIR` |
 | HLA-LA | `conda env create -f envs/hla-la.yml`, then copy `PRG_MHC_GRCh38_withIMGT` from RDSS into `<env>/opt/hla-la/graphs/` | — |
-| HLA-HD | `hlahd.1.7.1.tar.gz` from RDSS (for nf-core/hlatyping) | `HLAHD_TARBALL` |
+| nf-core/hlatyping | the patched checkout (`hlatyping-patched`), run as `nextflow run .` | `HLATYPING_DIR` |
+| HLA-HD | `hlahd.1.7.1.tar.gz` from RDSS (passed to hlatyping as `--hlahd_path`) | `HLAHD_TARBALL` |
 | MGP1000 | the Myriad-adapted mgp1000 folder from RDSS | `MGP1000_DIR` |
 | IgCaller | IgCaller + `IgCaller_reference_files/` | `IGCALLER_HOME` |
 | nextflow-pvacseq | v1.0.0 + IEDB + VEP plugins | `PVACSEQ_*` |
@@ -103,7 +104,5 @@ Point the matching variable in `config/pipeline.config` at each one.
 
 ## Still to check (marked `TODO` in the code)
 
-- `nextflow_HLA.sh` was never committed, so the nf-core/hlatyping command
-  (release, HLA-HD switch) in `stages/04_hla/hlatyping.job.sh` is a best guess.
 - A few mgp1000 output folder/file names in stage 03 are assumed, not seen.
 - `grep -rn TODO .` lists the rest.

@@ -29,7 +29,7 @@ while IFS=$'\t' read -r p s st _; do
         blank; blank; blank
         mark "$HLA_DIR/T1K/${p}_HLA_genotype.tsv"
         if [[ -e $HLA_DIR/calls/optitype/${p}_result.tsv ]] ||
-            [[ -n $(find "$HLA_DIR/hlatyping" -name "${p}*_result.tsv" 2> /dev/null | head -1) ]]; then
+            [[ -n $(find "$HLA_DIR" -path "*optitype*" -name "${p}*_result.tsv" 2> /dev/null | head -1) ]]; then
             printf '%-7s' +
         else printf '%-7s' .; fi
         mark "$HLA_DIR/HLA_LA/$p/hla/R1_bestguess_G.txt"

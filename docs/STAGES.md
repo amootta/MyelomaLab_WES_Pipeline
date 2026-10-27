@@ -69,9 +69,9 @@ by at least 2 of the 3 callers.
 | Step | Needs | Writes |
 |---|---|---|
 | `t1k` | normal bams, `$T1K_DIR/hlaidx/` | `$HLA_DIR/T1K/<P>_HLA_genotype.tsv` |
-| `hlatyping` | normal bams | `$HLA_DIR/hlatyping/` (OptiType, HLA-HD) |
+| `hlatyping` | normal bams, `HLATYPING_DIR` (patched checkout), `HLAHD_TARBALL` | `$HLA_DIR/hlatyping/` (OptiType, HLA-HD) |
 | `hlala` | normal bams, `hla-la` env with graph | `$HLA_DIR/HLA_LA/<P>/hla/R1_bestguess_G.txt` |
-| `collect` | any of the above | `$HLA_DIR/calls/{t1k,optitype,hlahd,hlala}/<P>_*` (one flat folder per caller) |
+| `collect` | any of the above (searches all of `$HLA_DIR`, so older runs written straight into `HLA/` are found too) | `$HLA_DIR/calls/{t1k,optitype,hlahd,hlala}/<P>_*` (one flat folder per caller) |
 | `concordance` | `calls/`, `HLA_TRUTH` | `$HLA_DIR/HLA_typing_comparison.xlsx` |
 
 ## 05 kir (normals, keyed by patient)
