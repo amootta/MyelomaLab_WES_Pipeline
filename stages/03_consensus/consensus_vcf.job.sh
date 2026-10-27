@@ -5,16 +5,38 @@
 # mgp1000 union consensus TSV -> filter_consensus_calls.py -> consensus_tsv_to_vcf.py,
 # then file each VCF under pvacseq_input/<patient>/ by its tumour sample name.
 # Replaces run_consensus_conversion.sh.
+#
+# mgp1000's output folder is shared by every batch, so only pairs whose tumour
+# is in this batch's samples.tsv are taken (see sheet_tumour in lib/common.sh).
 source "$PIPELINE_DIR/lib/common.sh"
 module load "$PYTHON_MODULE"
 
+tables=$CONSENSUS_DIR/mgp1000_tables
 filtered=$CONSENSUS_DIR/filtered
 vcfs=$CONSENSUS_DIR/vcf
 by_patient=$CONSENSUS_DIR/pvacseq_input
-mkdir -p "$filtered" "$vcfs" "$by_patient"
+mkdir -p "$tables" "$filtered" "$vcfs" "$by_patient"
+# rebuilt from scratch every run, so a changed sample sheet leaves nothing stale
+find "$tables" "$by_patient" -type l -delete
+find "$filtered" "$vcfs" -type f -delete
+
+kept=0 skipped=0
+for f in $MGP1000_CONSENSUS_GLOB; do
+    [[ -e $f ]] || continue
+    pair=$(basename "$f")
+    pair=${pair%%.hq.union.*}
+    if [[ -n $(pair_tumour "$pair") ]]; then
+        ln -s "$f" "$tables/$(basename "$f")"
+        kept=$((kept + 1))
+    else
+        skipped=$((skipped + 1))
+    fi
+done
+log "$kept pair(s) from this batch, $skipped other pair(s) in $MGP1000_SOMATIC_DIR/consensus skipped"
+((kept > 0)) || die "no mgp1000 consensus tables match the tumours in $SAMPLES"
 
 python3 "$PIPELINE_DIR/bin/filter_consensus_calls.py" \
-    --input "$MGP1000_CONSENSUS_GLOB" \
+    --input "$tables/*.hq.union.consensus.somatic.snv.txt.gz" \
     --min-callers "$CONSENSUS_MIN_CALLERS" \
     --outdir "$filtered"
 
@@ -23,20 +45,17 @@ python3 "$PIPELINE_DIR/bin/consensus_tsv_to_vcf.py" \
     --outdir "$vcfs" \
     --reference-fai "$REF_FAI"
 
-# Tumour names in mgp1000 output can carry lane/library suffixes
-# (COS_001_063_BL_EKDN...L3), so match on the longest patient ID prefix.
-mapfile -t pts < <(patients | awk '{ print length, $0 }' | sort -rn | cut -d' ' -f2-)
+declare -A seen
 for v in "$vcfs"/*.vcf; do
-    tumour=$(grep -m1 '^#CHROM' "$v" | cut -f10)
-    patient=""
-    for p in "${pts[@]}"; do
-        [[ $tumour == "$p"* ]] && { patient=$p; break; }
-    done
-    if [[ -z $patient ]]; then
-        warn "$v: tumour '$tumour' matches no patient in $SAMPLES, not filed"
-        continue
+    name=$(grep -m1 '^#CHROM' "$v" | cut -f10)
+    tumour=$(sheet_tumour "$name")
+    [[ -n $tumour ]] || { warn "$v: tumour '$name' is not in $SAMPLES, not filed"; continue; }
+    if [[ -n ${seen[$tumour]:-} ]]; then
+        warn "$tumour has two consensus VCFs (${seen[$tumour]} and $(basename "$v")) -- an old and a new mgp1000 run? Both filed; remove one from mgp1000's output."
     fi
+    seen[$tumour]=$(basename "$v")
+    patient=$(patient_of "$tumour")
     mkdir -p "$by_patient/$patient"
     ln -sf "$v" "$by_patient/$patient/$(basename "$v")"
-    log "$tumour -> $patient"
+    log "$name -> $tumour ($patient)"
 done

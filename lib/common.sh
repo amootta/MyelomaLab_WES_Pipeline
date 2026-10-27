@@ -117,17 +117,33 @@ mutect2_filtered() { echo "$MUTECT2_DIR/$(pair_id "$1" "$2").mutect2_filtered.vc
 ascat_cnv()        { local id; id=$(pair_id "$1" "$2"); echo "$SAREK_DIR/variant_calling/ascat/$id/$id.cnvs.txt"; }
 ascat_pp()         { local id; id=$(pair_id "$1" "$2"); echo "$SAREK_DIR/variant_calling/ascat/$id/$id.purityploidy.txt"; }
 
-# consensus_vcf <tumour>: stage 03's 2-of-3 consensus VCF for this tumour.
-# VCF tumour names can carry suffixes (COS_001_063_PRG_merged), so each VCF
-# goes to the LONGEST tumour sample ID its name starts with. Prints nothing
-# if there is no match.
+# sheet_tumour <name>: the tumour sample ID in samples.tsv that a tool's
+# tumour name refers to, or nothing if it is not in this batch. Tool names can
+# carry suffixes (COS_003_009_PRG_EKDN260019594-1A_23HGVNLT4_L7,
+# COS_001_063_PRG_merged), so the longest sample ID the name starts with wins,
+# as long as the name continues with "_" or "." (P1_BL never claims P1_BL2).
+sheet_tumour() {
+    tumours | cut -f2 | awk -v t="$1" '
+        index(t, $0) == 1 && (length(t) == length($0) || substr(t, length($0) + 1, 1) ~ /[_.]/) &&
+        length($0) > length(b) { b = $0 }
+        END { print b }'
+}
+
+# pair_tumour <pair>: sheet_tumour for an mgp1000 "<T>_vs_<N>" pair name
+pair_tumour() { sheet_tumour "${1%%_vs_*}"; }
+
+patient_of() { sample_rows | awk -F'\t' -v s="$1" '$2 == s { print $1; exit }'; }
+
+# consensus_vcf <tumour>: stage 03's 2-of-3 consensus VCF for this tumour
+# (matched on the VCF's tumour column). Prints nothing if there is none.
 consensus_vcf() {
-    local v t best
+    local v
     for v in "$CONSENSUS_DIR"/vcf/*.vcf; do
         [[ -e $v ]] || return 0
-        t=$(grep -m1 '^#CHROM' "$v" | cut -f10)
-        best=$(tumours | cut -f2 | awk -v t="$t" 'index(t, $0) == 1 && length($0) > length(b) { b = $0 } END { print b }')
-        if [[ $best == "$1" ]]; then echo "$v"; return 0; fi
+        if [[ $(sheet_tumour "$(grep -m1 '^#CHROM' "$v" | cut -f10)") == "$1" ]]; then
+            echo "$v"
+            return 0
+        fi
     done
 }
 

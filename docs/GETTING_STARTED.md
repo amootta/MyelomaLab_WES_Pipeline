@@ -234,12 +234,13 @@ empty. Then either:
 
 ## Things to know
 
-- **mgp1000 output is shared between batches.** mgp1000 writes to
-  `$MGP1000_DIR/output/somatic/` whatever the batch, and stage 03 reads
-  everything there. Pairs from patients that aren't in your sample sheet are
-  skipped when VCFs are sorted for pVACseq, but `consensus isec` processes
-  every pair it finds. For a clean second batch, use a separate copy of
-  the mgp1000 folder (set `MGP1000_DIR`).
+- **One mgp1000 folder serves every batch.** mgp1000 writes all batches into
+  `$MGP1000_DIR/output/somatic/`. Both `consensus` steps take only the pairs
+  whose tumour is in the current sample sheet, and log how many others they
+  skipped. Tumour names with library suffixes from older runs
+  (`COS_003_009_PRG_EKDN…_L7`) still match their short sample-sheet name. If a
+  tumour has pairs from two mgp1000 runs, `consensus vcf` warns, so you can
+  remove the one you don't want.
 - mgp1000 can also preprocess from FASTQs itself instead of using sarek's
   bams. That command is kept, commented, in `stages/02_mgp1000/mgp1000.job.sh`,
   but `wes.sh` uses sarek's bams.

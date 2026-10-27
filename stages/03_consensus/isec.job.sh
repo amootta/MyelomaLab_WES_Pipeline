@@ -16,6 +16,8 @@ module load bcftools
 out=$CONSENSUS_DIR/isec
 norm=$out/normalized
 mkdir -p "$norm" "$out/variant_tsv"
+# rebuilt every run: only this batch's pairs, nothing left from an older sheet
+find "$norm" "$out/variant_tsv" -type f -delete
 log_tn=$out/sample_order_check.log
 echo -e "vcf\tcaller\ttumor_sample\ttumor_idx\tnormal_sample\tnormal_idx" > "$log_tn"
 
@@ -24,14 +26,18 @@ echo -e "vcf\tcaller\ttumor_sample\ttumor_idx\tnormal_sample\tnormal_idx" > "$lo
 # strelka/<T>_vs_<N>.strelka.somatic.snv.vcf.gz (both checked on real output).
 pair_of() { basename "$1" .vcf.gz | sed -E 's/\.(mutect|strelka|varscan|somatic|snv)(\..*)?$//'; }
 
-# ---- normalise --------------------------------------------------------------
+# ---- normalise (this batch's pairs only: mgp1000's output is shared) ---------
 for c in mutect strelka varscan; do
+    kept=0 skipped=0
     for vcf in "$MGP1000_SOMATIC_DIR/$c"/*.somatic.snv.vcf.gz; do
         [[ -e $vcf ]] || { warn "no $c VCFs"; break; }
         p=$(pair_of "$vcf")
+        if [[ -z $(pair_tumour "$p") ]]; then skipped=$((skipped + 1)); continue; fi
+        kept=$((kept + 1))
         bcftools norm -m -any -f "$REF_FASTA" "$vcf" -Oz -o "$norm/$p.$c.norm.vcf.gz"
         bcftools index -f "$norm/$p.$c.norm.vcf.gz"
     done
+    log "$c: $kept pair(s) from this batch, $skipped other pair(s) skipped"
 done
 
 # get_tn_indices <vcf> <caller> -> "tumor_idx tumor_name normal_idx normal_name"
