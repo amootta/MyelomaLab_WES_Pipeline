@@ -41,8 +41,7 @@ step_bams() {
     mkdir -p "$SAMPLESHEET_DIR"
     : > "$list"
     while IFS=$'\t' read -r _ s _ _; do
-        [[ -n $(sample_field "$s" bam) ]] && continue
-        [[ -e $SAREK_DIR/preprocessing/recalibrated/$s/$s.recal.bam ]] && continue
+        [[ -e $(recal_bam "$s") ]] && continue   # override, sarek's own, or already converted
         need "$(recal_cram "$s")"
         echo "$s" >> "$list"
     done < <(sample_rows)

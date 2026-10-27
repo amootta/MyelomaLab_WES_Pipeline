@@ -20,8 +20,8 @@ log_tn=$out/sample_order_check.log
 echo -e "vcf\tcaller\ttumor_sample\ttumor_idx\tnormal_sample\tnormal_idx" > "$log_tn"
 
 # <pair> = everything before the first .mutect/.strelka/.varscan/.somatic, e.g.
-# mutect/<T>_vs_<N>.mutect.somatic.snv.vcf.gz -> <T>_vs_<N> (checked on real output).
-# TODO: confirm the strelka/ and varscan/ SNV files follow the same pattern.
+# mutect/<T>_vs_<N>.mutect.somatic.snv.vcf.gz -> <T>_vs_<N>, and likewise
+# strelka/<T>_vs_<N>.strelka.somatic.snv.vcf.gz (both checked on real output).
 pair_of() { basename "$1" .vcf.gz | sed -E 's/\.(mutect|strelka|varscan|somatic|snv)(\..*)?$//'; }
 
 # ---- normalise --------------------------------------------------------------
