@@ -67,9 +67,8 @@ def class_i_alleles(path, source, resolution):
     alleles = []
     for gene in CLASS_I:
         for a in calls.get(gene, (None, None)):
-            # "A*02:01" -> "HLA-A02:01", the format of the csv that last ran.
-            # TODO: pVACseq itself documents HLA-A*02:01; check which form
-            #       nextflow-pvacseq expects before changing this.
+            # "A*02:01" -> "HLA-A02:01": the format nextflow-pvacseq ran
+            # successfully with (HLA_pvacseq_COS_001_063.csv), so kept as is.
             if a:
                 fmt = "HLA-" + a.replace("*", "")
                 if fmt not in alleles:
