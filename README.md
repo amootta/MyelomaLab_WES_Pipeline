@@ -18,6 +18,9 @@ FASTQ ──► 01 sarek ──► recal crams/bams, Mutect2, Strelka, ASCAT, CN
                 └──► 08 PyClone-VI  (03 consensus + ASCAT)    per patient
 ```
 
+**New here? [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)** walks through
+installing everything, setting up a batch and running it from FASTQs.
+
 **[docs/STAGES.md](docs/STAGES.md)** lists, for every step, what it reads,
 what it writes and where.
 
