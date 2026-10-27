@@ -1,3 +1,0 @@
-patient,status,sex,sample,cram,crai
-COS_001_063,1,XX,COS_001_063_PRG,/myriadfs/home/regma03/Scratch/WES_tumor_batch1/preprocessing/recalibrated/PRG_merged.fixed.cram,/myriadfs/home/regma03/Scratch/WES_tumor_batch1/preprocessing/recalibrated/PRG_merged.fixed.cram.crai
-COS_001_063,0,XX,COS_001_063_PBMC,/myriadfs/home/regma03/Scratch/WES_tumor_batch1/preprocessing/recalibrated/COS_001_063_PBMC/COS_001_063_PBMC.recal.cram,/myriadfs/home/regma03/Scratch/WES_tumor_batch1/preprocessing/recalibrated/COS_001_063_PBMC/COS_001_063_PBMC.recal.cram.crai
