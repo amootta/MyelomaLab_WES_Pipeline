@@ -57,7 +57,7 @@ preprocessing-from-FASTQ commands are kept, commented, in `mgp1000.job.sh`.
 
 | Step | Needs | Writes |
 |---|---|---|
-| `vcf` | `$MGP1000_CONSENSUS_GLOB` (`*.hq.union.consensus.somatic.snv.txt.gz`) | `$CONSENSUS_DIR/filtered/*.callers_ge2.txt.gz` → `$CONSENSUS_DIR/vcf/*.vcf` → linked per patient into `$CONSENSUS_DIR/pvacseq_input/<P>/` |
+| `vcf` | `$MGP1000_CONSENSUS_GLOB` (`consensus/<T>_vs_<N>/*.hq.union.consensus.somatic.snv.txt.gz`) | `$CONSENSUS_DIR/filtered/*.callers_ge2.txt.gz` → `$CONSENSUS_DIR/vcf/*.vcf` → linked per patient into `$CONSENSUS_DIR/pvacseq_input/<P>/` |
 | `isec` | `$MGP1000_SOMATIC_DIR/{mutect,strelka,varscan}/*.somatic.snv.vcf.gz` | `$CONSENSUS_DIR/isec/normalized/`, `isec/variant_tsv/<pair>.snv.filtered.variants.tsv`, `isec/sample_order_check.log` (check the VarScan rows) |
 
 `vcf` keeps sites that PASS in at least `CONSENSUS_MIN_CALLERS` callers (default 2).

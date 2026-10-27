@@ -19,9 +19,9 @@ mkdir -p "$norm" "$out/variant_tsv"
 log_tn=$out/sample_order_check.log
 echo -e "vcf\tcaller\ttumor_sample\ttumor_idx\tnormal_sample\tnormal_idx" > "$log_tn"
 
-# <pair> from e.g. T_vs_N.mutect.somatic.snv.vcf.gz / T_vs_N.somatic.snv.vcf.gz
-# TODO: check against real mgp1000 file names -- this assumes the pair ID is
-#       everything before the first of .mutect/.strelka/.varscan/.somatic.
+# <pair> = everything before the first .mutect/.strelka/.varscan/.somatic, e.g.
+# mutect/<T>_vs_<N>.mutect.somatic.snv.vcf.gz -> <T>_vs_<N> (checked on real output).
+# TODO: confirm the strelka/ and varscan/ SNV files follow the same pattern.
 pair_of() { basename "$1" .vcf.gz | sed -E 's/\.(mutect|strelka|varscan|somatic|snv)(\..*)?$//'; }
 
 # ---- normalise --------------------------------------------------------------
