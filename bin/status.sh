@@ -6,8 +6,8 @@ source "$(dirname "$0")/../lib/common.sh"
 mark() { if have "$@"; then printf '%-7s' +; else printf '%-7s' .; fi; }
 blank() { printf '%-7s' ""; }
 
-printf '%-26s %-4s %-7s%-7s%-7s%-7s%-7s%-7s%-7s%-7s%-7s%-7s%-7s\n' \
-    sample type cram bam mut2f ascat cons.v hlaT1K hlaOpt hlaLA kirT1K igcall pyclon
+printf '%-26s %-4s %-7s%-7s%-7s%-7s%-7s%-7s%-7s%-7s%-7s%-7s%-7s%-7s%-7s\n' \
+    sample type cram bam mut2f ascat cons.v hlaT1K hlaOpt hlaLA kirT1K igcall pyclon germ.v ancest
 while IFS=$'\t' read -r p s st _; do
     printf '%-26s %-4s ' "$s" "$([[ $st == 0 ]] && echo N || echo T)"
     mark "$(recal_cram "$s")"
@@ -25,6 +25,7 @@ while IFS=$'\t' read -r p s st _; do
         blank; blank; blank; blank
         mark "$IGCALLER_DIR/$s"
         mark "$PYCLONE_DIR/$p/$p.results.tsv"
+        blank; blank
     else
         blank; blank; blank
         mark "$HLA_DIR/T1K/${p}_HLA_genotype.tsv"
@@ -35,6 +36,8 @@ while IFS=$'\t' read -r p s st _; do
         mark "$HLA_DIR/HLA_LA/$p/hla/R1_bestguess_G.txt"
         mark "$KIR_DIR/T1K/${p}_KIR_genotype.tsv"
         blank; blank
+        mark "$MGP1000_GERMLINE_DIR/$s.deepvariant.germline.snp.indel.vcf.gz"
+        mark "$MGP1000_GERMLINE_DIR/$s/$s.fastngsadmix.23.qopt"
     fi
     echo
 done < <(sample_rows)

@@ -13,7 +13,8 @@ flowchart LR
   s1 --> ascat[ASCAT]
   cram --> bams[01 sarek bams]
   m2raw --> m2f[01 sarek filter_mutect2]
-  bams --> mgp[02 mgp1000]
+  bams --> mgp[02 mgp1000 somatic]
+  bams --> mgpg[02 mgp1000 germline + ancestry]
   mgp --> cvcf[03 consensus vcf]
   mgp --> isec[03 consensus isec]
   bams --> hla[04 hla t1k / hlatyping / hlala]
@@ -46,12 +47,13 @@ Generated sheets: `$SAMPLESHEET_DIR/sarek_fastq.csv`, `sarek_cram.csv`.
 
 | Step | Needs | Writes |
 |---|---|---|
-| `somatic` | recal bams for every pair | bams hard-linked as `$MGP1000_INPUT_DIR/<S>.bam` (+ `.bai`), sheet `$SAMPLESHEET_DIR/mgp1000_somatic.csv`; mgp1000 writes `$MGP1000_SOMATIC_DIR/{mutect,strelka,varscan,consensus,...}/` |
+| `somatic` | recal bams for every pair | bams hard-linked as `$MGP1000_INPUT_DIR/<S>.final.bam` (+ `.bai`), sheet `$SAMPLESHEET_DIR/mgp1000_somatic.csv`; mgp1000 writes `$MGP1000_SOMATIC_DIR/{mutect,strelka,varscan,consensus,...}/` |
+| `germline` | recal bam of every normal | sheet `$SAMPLESHEET_DIR/mgp1000_germline.csv` (one row per normal); mgp1000 writes `$MGP1000_GERMLINE_DIR/<N>.deepvariant.germline.snp.indel.vcf.gz` and ancestry `$MGP1000_GERMLINE_DIR/<N>/<N>.fastngsadmix.23.qopt` |
 
-The tools mgp1000 runs are set by `MGP1000_SOMATIC_TOOLS` in the config
+Germline runs DeepVariant and fastNGSadmix ancestry (`MGP1000_GERMLINE_TOOLS`); fastNGSadmix needs the `fastNGSadmix_markers*` files in `$MGP1000_DIR/references/hg38/`, and the launcher warns if they are missing. The somatic tools are set by `MGP1000_SOMATIC_TOOLS` in the config
 (Mutect2, Strelka, VarScan, Manta, Delly, IgCaller on; Battenberg, SvABA,
-CaVEMan, Conpair and the telomere tools off). The germline and
-preprocessing-from-FASTQ commands are kept, commented, in `mgp1000.job.sh`.
+CaVEMan, Conpair and the telomere tools off). The
+preprocessing-from-FASTQ command is kept, commented, in `mgp1000.job.sh`.
 
 ## 03 consensus
 

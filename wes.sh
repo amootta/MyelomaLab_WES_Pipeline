@@ -18,7 +18,7 @@ usage: ./wes.sh <command> [step]
   status                                    per-sample progress table
 
   01 sarek       fastq | cram | bams | filter_mutect2
-  02 mgp1000     somatic
+  02 mgp1000     somatic | germline
   03 consensus   vcf | isec
   04 hla         t1k | hlatyping | hlala | collect | concordance
   05 kir         t1k | kircle | concordance

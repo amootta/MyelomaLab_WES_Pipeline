@@ -170,6 +170,7 @@ Wait for the `sarek_fastq` job to finish, then:
 
 ```bash
 ./wes.sh mgp1000 somatic        # Mutect2 + Strelka + VarScan (+ Manta, Delly, IgCaller)
+./wes.sh mgp1000 germline       # DeepVariant germline calls + fastNGSadmix ancestry, per normal
 ./wes.sh hla t1k
 ./wes.sh hla hlatyping          # OptiType + HLA-HD
 ./wes.sh hla hlala
