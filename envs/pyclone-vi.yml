@@ -1,0 +1,14 @@
+# conda env create -f envs/pyclone-vi.yml
+# Used by stage 08. The previous file was an empty export (an env called
+# o_builds with no packages). TODO: once it solves on Myriad, re-export with
+# `conda env export --no-builds` to pin versions.
+name: pyclone-vi
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.11
+  - pyclone-vi
+  - cancerit-allelecount
+  - bcftools
+  - htslib

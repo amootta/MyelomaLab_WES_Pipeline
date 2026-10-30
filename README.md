@@ -1,169 +1,112 @@
 # MyelomaLab_WES_Pipeline
-Collection of tools and pipelines used to analyze paired tumour-normal WES data in the Myeloma Lab
 
-Doesn't yet include parallelization..
+Tools and pipelines for paired tumour–normal whole-exome sequencing in the
+Myeloma Lab, set up for UCL Myriad (SGE + apptainer).
+
+Germline calls (HLA, KIR) come from each patient's normal. Somatic calls and
+everything downstream (consensus SNVs, IgCaller, neoantigens, clonality,
+signatures) are per tumour/normal pair.
+
+```
+FASTQ ──► 01 sarek ──► recal crams/bams, Mutect2, Strelka, ASCAT, CNVkit, Manta
+                │
+                ├──► 02 mgp1000 ──► 03 consensus ──► 07 pVACseq ◄── 04 HLA
+                │                       └──────────► 09 signatures (MMSig)
+                ├──► 04 HLA   (T1K, OptiType/HLA-HD, HLA-LA)  on normals
+                ├──► 05 KIR   (T1K, KIRCLE)                   on normals
+                ├──► 06 IgCaller                              per pair
+                └──► 08 PyClone-VI  (03 consensus + ASCAT)    per patient
+```
+
+**New here? [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)** walks through
+installing everything, setting up a batch and running it from FASTQs.
+
+**[docs/STAGES.md](docs/STAGES.md)** lists, for every step, what it reads,
+what it writes and where.
+
+## Layout
+
+| Path | What's there |
+|---|---|
+| `wes.sh` | the one command you run |
+| `config/pipeline.config` | **every path** (references, tools, output folders) |
+| `config/samples.tsv` | **every sample**: one row per sequencing lane |
+| `config/nextflow/` | Myriad fixes for sarek, hlatyping and nextflow-pvacseq |
+| `stages/NN_name/` | `run.sh` (checks inputs, submits) + `*.job.sh` (the SGE jobs) |
+| `bin/` | Python/R helpers (consensus filtering, VCF conversion, concordance, PyClone) |
+| `lib/common.sh` | shared helpers: sample lookups, file locations, `qsub` wrapper |
+| `envs/` | conda environments (T1K, HLA-LA, PyClone-VI, QC) |
+
+## Quick start (on a Myriad login node)
+
+```bash
+git clone https://github.com/amootta/MyelomaLab_WES_Pipeline.git
+cd MyelomaLab_WES_Pipeline
+# 1. edit config/pipeline.config (paths) and config/samples.tsv (samples)
+./wes.sh check                    # every path and the sample sheet look right?
+DRY_RUN=1 ./wes.sh sarek fastq    # see the qsub line without submitting
+./wes.sh sarek fastq              # submit
+./wes.sh status                   # what exists so far, per sample
+```
+
+Then work down [docs/STAGES.md](docs/STAGES.md). Each step checks the
+previous step's output exists before it queues anything, so a missing file
+fails in seconds on the login node instead of hours into a job. Job logs go
+to `$BATCH_DIR/logs/`.
+
+A new batch: copy `config/pipeline.config` and `config/samples.tsv`, change
+`BATCH_NAME` / `SAMPLES`, and run with
+`PIPELINE_CONFIG=/path/to/new.config ./wes.sh ...`.
+
+### The sample sheet
+
+`config/samples.tsv` is tab-separated, one row per lane:
+
+| column | |
+|---|---|
+| `patient` | e.g. `COS_001_037`. HLA/KIR results are keyed by this |
+| `sample` | unique per sample, e.g. `COS_001_037_BL`; lanes of one sample share it |
+| `status` | `0` normal, `1` tumour |
+| `sex` | `XX` / `XY`, used by sarek and PyClone. Defaults to `XX`; edit it per patient where known |
+| `lane`, `fastq_1`, `fastq_2` | for `wes.sh sarek fastq`. A sample sequenced on several lanes gets one row per lane (same `sample`); sarek aligns each lane and merges them into one bam per sample. A repeated lane number within a sample is renamed `3_2` etc. automatically |
+| `cram` | optional: use this cram instead of sarek's (e.g. a manually merged one) |
+| `bam` | optional: use this bam instead of sarek's (e.g. germline bams from elsewhere) |
+
+Every tumour is paired with its patient's normal automatically. The
+sarek, hlatyping, mgp1000 and PyClone sheets are generated from this file.
+
+## Installing the tools
+
+Shared installs and references live on the RDSS (ask Amatta for access):
+`/rdss/rd02/ritd-ag-project-rd028n-amira43/Shared_Scripts` (packages) and
+`/rdss/rd02/ritd-ag-project-rd028n-amira43/reference_files` (references).
+Point the matching variable in `config/pipeline.config` at each one.
+
+| Tool | Install | Config variable |
+|---|---|---|
+| Nextflow | https://docs.seqera.io/nextflow/install (mgp1000 needs 22.10.8; handled via `NXF_VER`) | on `PATH` |
+| conda | miniforge, see https://docs.conda.io | `CONDA_SH` |
+| T1K | `conda env create -f envs/t1k.yml` + T1K folder from RDSS (has `hlaidx/`, `kiridx/`) | `T1K_DIR` |
+| KIRCLE | KIRCLE zip from RDSS | `KIRCLE_DIR` |
+| HLA-LA | `conda env create -f envs/hla-la.yml`, then copy `PRG_MHC_GRCh38_withIMGT` from RDSS into `<env>/opt/hla-la/graphs/` | — |
+| nf-core/hlatyping | the patched checkout (in `$REF_DIR/hlatyping`), launched from `$HLA_DIR` | `HLATYPING_DIR` |
+| HLA-HD | `hlahd.1.7.1.tar.gz` from RDSS (passed to hlatyping as `--hlahd_path`) | `HLAHD_TARBALL` |
+| MGP1000 | the Myriad-adapted mgp1000 folder from RDSS | `MGP1000_DIR` |
+| IgCaller | IgCaller + `IgCaller_reference_files/` | `IGCALLER_HOME` |
+| nextflow-pvacseq | v1.0.0 + IEDB + VEP plugins | `PVACSEQ_*` |
+| PyClone-VI | `conda env create -f envs/pyclone-vi.yml` | — |
+| FastQC, Qualimap, MultiQC | `conda env create -f envs/qc.yml` (stage 10); optional capture BED for Qualimap | `QC_TARGET_BED` |
+| Funcotator data sources | https://console.cloud.google.com/storage/browser/gcp-public-data--broad-references/funcotator (also on RDSS) | `FUNCOTATOR_DS` |
+| MMSig | in R: https://github.com/evenrus/mmsig (calls are **hg38**; mmsig defaults to hg19) | — |
+
+## Analysis choices
 
-Other files can be found on the RDSS: /rdss/rd02/ritd-ag-project-rd028n-amira43/Shared_Scripts for **big packages and installation** and /rdss/rd02/ritd-ag-project-rd028n-amira43/reference_files for **Reference Files**
+- PyClone, MMSig and pVACseq all use the mgp1000 2-of-3 consensus SNVs
+  (`CONSENSUS_MIN_CALLERS`). Mutect2-only filtered calls + Funcotator MAFs are
+  still produced by `wes.sh sarek filter_mutect2`.
+- pVACseq takes OptiType's class I typing (`HLA_SOURCE_FOR_PVACSEQ`).
 
-Please let me know if you need access and I can add you! 
+## Still to check (marked `TODO` in the code)
 
-
-**SAREK PIPELINE**
-
-**Scripts**
-
-run_sarek.sh - run sarek pipeline from fastq (from scratch) or from available bam/cram
-
-filter_annotate.sh - script to annotate outputs from mutect2 (from vcfs) using funcotator (GATK pipeline). Also produces a filtered VCF file (Mutect2 PASS Filter) 
-
-**Additional files needed:**
-
-myriad_extra.config - config file tailored to UCL Myriad (need this!)
-
-samplesheet_fastq.csv - sample sheet needed to run sarek from fastq
-
-samplesheet_cram_sarek.csv - sample sheet needed to run sarek from bam/cram
-
-**Reference files needed:**
-HG38 reference genome to use is uploaded on to RDSS
-Other reference files needed are provided in References folder in RDSS
-for Funcotator: download funcotator data source folder: https://console.cloud.google.com/storage/browser/gcp-public-data--broad-references/funcotator?pageState=(%22StorageObjectListTable%22:(%22f%22:%22%255B%255D%22))
-
-Also available on RDSS
-
-**MGP1000 PIPELINE**
-
-Two choices: can either run from the .bams that have been produced by Sarek pipeline, or again start from fastqs (from Scratch)
-
-Personally I prefer starting from the crams/bams that have been produced by Sarek as they follow the GATK Gold Standard pre-processing pipeline, but again personal choice! Have given both versions of the scripts in the files uploaded
-
-MGP1000 installation folder to use that is appropriate with UCL Myriad system has been uploaded onto here as well. Again needs an installation of Nextflow before you run this. Particularly I used Nextflow version 22.10.8 
-
-**Scripts**
-mgp1000_WES.sh - full run script for MGP1000. If using .crams produced by Sarek, includes converting .crams to .bams as MGP1000 only takes .bams
-
-
-**Reference files needed:**
-
-Other reference files needed are provided in References folder in RDSS
-
-
-**KIR PIPELINE**
-
-KIR Calling is run on T1K or KIRCLE
-
-**Installation**
-*T1K*
-To install T1K you will need to first install conda : https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html
-
-then you will need to create an appropriate conda environment to run T1K: 
-
-conda env create -f t1k_environment.yml 
-
-T1K runs on BAMs, which you already have from previous pipeline runs
-
-*KIRCLE*
-To install KIRCLE, download the KIRCLE zip folder that is in RDSS. 
-
-**Scripts**
-t1k.sh - script to run T1K for KIR Calling 
-KIRCLE.sh  - script to run KIRCLE for KIR Calling 
-
-Can also run KIR concordance.py to find out across all samples run the concordance between different tools
-
-**Additional files needed**
-Download the T1K zip folder on RDSS and thats where the appropriate reference files are. Change the directory in your code to point to there. 
-
-Reference files for KIRCLE are also in the zipped KIRCLE Folder. Change the BLASTDB export path in the script accordingly
-
-
-**HLA PIPELINE**
-
-HLA Calling is run using T1K, Nextflow HLATyping (Optitype and HLAHD) and HLA-LA
-
-**Installations**
-
-*T1K* - nothing new to install, use the same installation as the one we used to run KIR
-
-*Nextflow HLATyping* - need to download the hlahd.1.7.1.tar.gz from RDSS. Need to download the config files to run. 
-
-*HLA-LA*  - need to use conda again to install this:
-
-conda env create -f hlala_environment.yml 
-
-AFTERWARDS (slightly complicated). After having installed the conda environment locally, please copy this folder into the appropriate path as below (change to your user/where the environment is installed locally on your myriad user login):
-
-/home/regma03/Scratch/conda/envs/hla-la/opt/hla-la/graphs/PRG_MHC_GRCh38_withIMGT
-
-The PRG_MHC_GRCh38_withIMGT folder is in RDSS for you to download and add to that exact path
-
-
-**Scripts**
-t1k_hla.sh - script to run T1K for HLA calling
-
-nextflow_HLA.sh - script to run the Nextflow HLAtyping pipeline using Optitype and HLAHD
-
-hla_la.sh - script to run HLA-LA pipeline 
-
-Can also run hla concordance.py to find out across all samples run the concordance between different tools
-
-**Additional files needed:**
-
-hlatyping_fix.config - config file tailored to UCL Myriad (need this!)for Nextflow HLATyping pipeline
-
-samplesheet_hla.csv - sample sheet needed to run hla calling from BAMs for Nextflow HLATyping pipeline
-
-
-##########################################################################################################################
-
-That is basically the end of the basic calling pipelines... now onto some downstream stuff! 
-
-**Pyclone**
-Pyclone is a tool used to infer the clonal population structure of heterogeneous cancer samples using deep next-generation sequencing (NGS) data
-
-Questions: to use **filtered** somatic mutation calls based on the MGP1000 pipeline where we only use mutations that are called in 2/3 tools - between Strelka, Mutect2 and Varscan? 
-
-Or just use all filtered mutations from Mutect2 only - based on GATK Gold Standards??????
-
-**Installation**
-
-Again need to use conda to install an environment:
-conda env create -f pyclone_environment.yml 
-
-
-**Scripts**
-
-I have only written this for mutect2 outputs (unfiltered)...
-
-Input needed is a **vcf file of somatic mutations, purityploidy file from ASCAT output, and also cnv file from ASCAT output (these were run using Sarek)**. Need to run this on both BSL and Followup/PRG timepoint together. Make sure you have all of these available.
-
-1. First run pyclone_counts.sh
-3. Run pileup.sh on the resulting files from step 1
-4. Run  build_pyclone_input.sh with Rscript build_pyclone_input.R. you will need a manifest.tsv file (example uploaded)
-5. Run pyclone_run.sh on the output from 4
-6. Summarize and visualize plots of the results from 4 using summarize_pyclone.sh with Rscript summarize_pyclone.R 
-
-
-
-**Mutational Signature Calling**
-
-Again the same question of what set of mutations to use: to use **filtered** somatic mutation calls based on the MGP1000 pipeline where we only use mutations that are called in 2/3 tools - between Strelka, Mutect2 and Varscan? 
-
-Or just use all filtered mutations from Mutect2 only - based on GATK Gold Standards??????
-
-**Scripts**
-
-merging_results.sh - I have provided edited code (thanks Filippo) to merge and filter MGP1000 calls to only those that are called in 2/3 tools used. These produce a .tsv file that you can then use to as input to run in MMSig (R based)
-
-Running MMSig - no script for this. You can install and read vignette on https://github.com/evenrus/mmsig. Very simple straightforward and easy. **However note that we are using hg38 and the default is hg19. Just make sure to change parameters when running mmsig**
-
-
-**PYCLONE**
-read the pyclone.txt file to see how this is run. 
-
-
-
-
-
-
-
+- A few mgp1000 output folder/file names in stage 03 are assumed, not seen.
+- `grep -rn TODO .` lists the rest.

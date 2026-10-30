@@ -1,6 +1,0 @@
-name: o_builds
-channels:
-  - conda-forge
-  - bioconda
-dependencies: []
-prefix: /home/regma03/Scratch/conda/envs/o_builds

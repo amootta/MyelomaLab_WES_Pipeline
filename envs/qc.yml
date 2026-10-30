@@ -1,0 +1,9 @@
+# conda env create -f envs/qc.yml   (stage 10)
+name: qc
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - fastqc=0.12.1
+  - qualimap=2.3
+  - multiqc=1.25
