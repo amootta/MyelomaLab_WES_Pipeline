@@ -26,6 +26,7 @@ usage: ./wes.sh <command> [step]
   07 pvacseq     hla | run
   08 pyclone     run
   09 signatures  input
+  10 qc          fastqc | qualimap | multiqc
 
 Steps are submitted one at a time: each checks the previous step's
 output exists before queueing anything. Order: docs/STAGES.md
@@ -47,6 +48,7 @@ case $cmd in
     pvacseq|07)    stage=07_pvacseq ;;
     pyclone|08)    stage=08_pyclone ;;
     signatures|09) stage=09_signatures ;;
+    qc|10)         stage=10_qc ;;
     *) usage ;;
 esac
 exec bash "$here/stages/$stage/run.sh" "$@"

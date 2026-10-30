@@ -30,6 +30,9 @@ flowchart LR
   ascat --> py
   cram --> py
   isec --> sig[09 signatures]
+  bams --> qc[10 qc fastqc / qualimap]
+  fq --> qc
+  qc --> mqc[10 qc multiqc]
 ```
 
 ## 01 sarek
@@ -112,3 +115,16 @@ PyClone-VI table, the fit, then the summary.
 | Step | Needs | Writes |
 |---|---|---|
 | `input` | `$CONSENSUS_DIR/isec/variant_tsv/*.tsv` | `$CONSENSUS_DIR/isec/mmsig_input.tsv`, which you then run through MMSig in R (set hg38) |
+
+## 10 qc (every sample; `qc` conda env from `envs/qc.yml`)
+
+| Step | Needs | Writes |
+|---|---|---|
+| `fastqc` | recal bam; FASTQs from `samples.tsv` where they still exist | `$QC_DIR/fastqc/<S>/` |
+| `qualimap` | recal bam, optional `QC_TARGET_BED` (6-column BED) | `$QC_DIR/qualimap/<S>/` (bamqc, duplicates skipped) |
+| `multiqc` | any of the above, plus sarek's `$SAREK_DIR/reports/` if present | `$QC_DIR/qualimap/multi_bamqc/`, `$QC_DIR/multiqc/multiqc_report.html` |
+
+Sarek already runs FastQC, mosdepth and samtools stats when started from
+FASTQs, but not with `sarek cram`. The MultiQC report includes sarek's
+mosdepth and samtools results and leaves out sarek's FastQC, which `qc fastqc`
+repeats.

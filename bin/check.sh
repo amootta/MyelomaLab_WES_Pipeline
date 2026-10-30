@@ -23,6 +23,7 @@ for v in CONDA_SH T1K_DIR KIRCLE_DIR HLATYPING_DIR HLAHD_TARBALL IGCALLER_HOME I
          PVACSEQ_PIPELINE PVACSEQ_IEDB PVACSEQ_VEP_PLUGINS; do
     check "$v" "${!v}"
 done
+[[ -n $QC_TARGET_BED ]] && check QC_TARGET_BED "$QC_TARGET_BED"
 command -v nextflow > /dev/null && echo "  ok       nextflow               $(command -v nextflow)" \
     || { echo "  MISSING  nextflow               (not on PATH)"; bad=1; }
 command -v qsub > /dev/null || echo "  note     qsub not on PATH -- run this on a Myriad login node"

@@ -35,7 +35,7 @@ what it writes and where.
 | `stages/NN_name/` | `run.sh` (checks inputs, submits) + `*.job.sh` (the SGE jobs) |
 | `bin/` | Python/R helpers (consensus filtering, VCF conversion, concordance, PyClone) |
 | `lib/common.sh` | shared helpers: sample lookups, file locations, `qsub` wrapper |
-| `envs/` | conda environments (T1K, HLA-LA, PyClone-VI) |
+| `envs/` | conda environments (T1K, HLA-LA, PyClone-VI, QC) |
 
 ## Quick start (on a Myriad login node)
 
@@ -95,6 +95,7 @@ Point the matching variable in `config/pipeline.config` at each one.
 | IgCaller | IgCaller + `IgCaller_reference_files/` | `IGCALLER_HOME` |
 | nextflow-pvacseq | v1.0.0 + IEDB + VEP plugins | `PVACSEQ_*` |
 | PyClone-VI | `conda env create -f envs/pyclone-vi.yml` | — |
+| FastQC, Qualimap, MultiQC | `conda env create -f envs/qc.yml` (stage 10); optional capture BED for Qualimap | `QC_TARGET_BED` |
 | Funcotator data sources | https://console.cloud.google.com/storage/browser/gcp-public-data--broad-references/funcotator (also on RDSS) | `FUNCOTATOR_DS` |
 | MMSig | in R: https://github.com/evenrus/mmsig (calls are **hg38**; mmsig defaults to hg19) | — |
 

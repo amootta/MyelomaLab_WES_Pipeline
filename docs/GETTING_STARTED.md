@@ -180,6 +180,14 @@ Wait for the `sarek_fastq` job to finish, then:
 ./wes.sh kir t1k
 ./wes.sh kir kircle
 ./wes.sh igcaller run
+./wes.sh qc fastqc              # FastQC on FASTQs + bams
+./wes.sh qc qualimap            # Qualimap bamqc per bam
+```
+
+Once the two QC jobs finish:
+
+```bash
+./wes.sh qc multiqc             # -> QC/multiqc/multiqc_report.html
 ```
 
 ### C3. Gather the HLA calls (after the C2 HLA jobs)
@@ -221,7 +229,8 @@ C1 sarek fastq ─► sarek bams ─┬─► mgp1000 ─► consensus vcf ─�
                               │                └─► consensus isec ─► signatures
                               ├─► hla (t1k, hlatyping, hlala) ─► hla collect ─┘(feeds pvacseq hla)
                               ├─► kir (t1k, kircle)
-                              └─► igcaller
+                              ├─► igcaller
+                              └─► qc (fastqc, qualimap) ─► qc multiqc
                sarek filter_mutect2  (only needs sarek; for the MAFs)
 ```
 
