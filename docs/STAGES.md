@@ -1,7 +1,7 @@
 # Stages: what each step reads and writes
 
 Run every step as `./wes.sh <stage> <step>`. Paths below use the variables
-from `config/pipeline.config` (`$BATCH_DIR` = `$HOME/Scratch/<BATCH_NAME>`).
+from `config/pipeline.config` (`$BATCH_DIR` = `$HOME/Scratch/AMATTA/<BATCH_NAME>`).
 `<T>` = tumour sample, `<N>` = normal sample, `<P>` = patient. Pairs are
 named `<T>_vs_<N>`, as in sarek.
 

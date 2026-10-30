@@ -65,8 +65,11 @@ cp -r <RDSS>/.../PRG_MHC_GRCh38_withIMGT \
 
 ### A5. Tools and references from the RDSS
 
-Copy each item into `~/Scratch`, then point its variable in
-`config/pipeline.config` at it.
+Copy every item below into one folder, `~/Scratch/AMATTA/reference_files`
+(`REF_DIR`). It holds programs and references only and is shared by every
+batch: each stage is launched from the batch folder, so Nextflow `work/`,
+intermediate and final files all go under `$BATCH_DIR`. If you put anything
+elsewhere, point its variable in `config/pipeline.config` at it.
 
 | What | Config variable |
 |---|---|
@@ -103,7 +106,7 @@ BATCH_NAME=WES_tumor_batch2
 SAMPLES=$PIPELINE_DIR/config/batch2_samples.tsv
 ```
 
-Every output then goes under `~/Scratch/WES_tumor_batch2/`. Then, for this shell:
+Every output then goes under `~/Scratch/AMATTA/WES_tumor_batch2/`. Then, for this shell:
 
 ```bash
 export PIPELINE_CONFIG=$PWD/config/batch2.config
@@ -235,8 +238,9 @@ empty. Then either:
 
 ## Things to know
 
-- **One mgp1000 folder serves every batch.** mgp1000 writes all batches into
-  `$MGP1000_DIR/output/somatic/`. Both `consensus` steps take only the pairs
+- **One mgp1000 install, one output folder per batch.** The install
+  (`MGP1000_DIR`) is shared; each batch is launched from `$BATCH_DIR/mgp1000`
+  (`MGP1000_RUN_DIR`) and writes to its `output/somatic/`. Both `consensus` steps take only the pairs
   whose tumour is in the current sample sheet, and log how many others they
   skipped. Tumour names with library suffixes from older runs
   (`COS_003_009_PRG_EKDN…_L7`) still match their short sample-sheet name. If a

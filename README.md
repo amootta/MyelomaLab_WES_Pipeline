@@ -89,7 +89,7 @@ Point the matching variable in `config/pipeline.config` at each one.
 | T1K | `conda env create -f envs/t1k.yml` + T1K folder from RDSS (has `hlaidx/`, `kiridx/`) | `T1K_DIR` |
 | KIRCLE | KIRCLE zip from RDSS | `KIRCLE_DIR` |
 | HLA-LA | `conda env create -f envs/hla-la.yml`, then copy `PRG_MHC_GRCh38_withIMGT` from RDSS into `<env>/opt/hla-la/graphs/` | — |
-| nf-core/hlatyping | the patched checkout (`hlatyping-patched`), run as `nextflow run .` | `HLATYPING_DIR` |
+| nf-core/hlatyping | the patched checkout (in `$REF_DIR/hlatyping`), launched from `$HLA_DIR` | `HLATYPING_DIR` |
 | HLA-HD | `hlahd.1.7.1.tar.gz` from RDSS (passed to hlatyping as `--hlahd_path`) | `HLAHD_TARBALL` |
 | MGP1000 | the Myriad-adapted mgp1000 folder from RDSS | `MGP1000_DIR` |
 | IgCaller | IgCaller + `IgCaller_reference_files/` | `IGCALLER_HOME` |

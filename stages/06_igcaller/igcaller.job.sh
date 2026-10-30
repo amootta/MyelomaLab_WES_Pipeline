@@ -12,10 +12,11 @@ module load python3
 
 out=$IGCALLER_DIR/$t
 mkdir -p "$out"
-cd "$IGCALLER_HOME"
-python3 IgCaller \
+# Run from the output folder so nothing is written into the shared install.
+cd "$out"
+python3 "$IGCALLER_HOME/IgCaller" \
     -V hg38 \
-    -I IgCaller_reference_files/ \
+    -I "$IGCALLER_HOME/IgCaller_reference_files/" \
     -C ucsc \
     -T "$(mapped_bam "$t")" \
     -N "$(mapped_bam "$n")" \

@@ -10,9 +10,11 @@ source "$PIPELINE_DIR/lib/common.sh"
 sheet=$1
 nextflow_env
 
+# Launch from the batch's HLA folder so work/ and .nextflow/ stay per batch;
+# the checkout in HLATYPING_DIR is shared.
 mkdir -p "$HLA_DIR/hlatyping"
-cd "$HLATYPING_DIR"
-nextflow run . \
+cd "$HLA_DIR"
+nextflow run "$HLATYPING_DIR" \
     -profile ucl_myriad \
     -c "$PIPELINE_DIR/config/nextflow/hlatyping_fix.config" \
     -resume \

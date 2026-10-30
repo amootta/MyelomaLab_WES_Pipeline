@@ -22,13 +22,17 @@ case $workflow in
     *) die "unknown mgp1000 workflow '$workflow'" ;;
 esac
 
-cd "$MGP1000_DIR"
+# The install in MGP1000_DIR is shared by every batch; launching from this
+# batch's MGP1000_RUN_DIR keeps work/, .nextflow/ and output/ per batch.
+mkdir -p "$MGP1000_RUN_DIR"
+cd "$MGP1000_RUN_DIR"
 # shellcheck disable=SC2086  # $tools is a list of flags
-nextflow run "./$workflow.nf" \
+nextflow run "$MGP1000_DIR/$workflow.nf" \
     --run_id "${MGP1000_RUN_ID}_$workflow" \
     --seq_protocol WES \
     --sample_sheet "$sheet" \
     --input_dir "$MGP1000_INPUT_DIR" \
+    --output_dir "$MGP1000_RUN_DIR/output" \
     --email "$EMAIL" \
     --executor sge \
     -profile "$workflow" \
