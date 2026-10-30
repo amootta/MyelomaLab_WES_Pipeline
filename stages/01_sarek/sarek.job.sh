@@ -7,6 +7,7 @@
 source "$PIPELINE_DIR/lib/common.sh"
 mode=$1 sheet=$2
 nextflow_env
+[[ -n $SAREK_NXF_VER ]] && export NXF_VER=$SAREK_NXF_VER
 
 mode_args=(--trim_fastq --save_mapped)      # fastq: full run from mapping
 [[ $mode == cram ]] && mode_args=(--step variant_calling)

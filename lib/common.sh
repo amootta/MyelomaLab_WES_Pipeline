@@ -195,6 +195,9 @@ nextflow_env() {
     module load "$APPTAINER_MODULE"
     module load samtools
     export NXF_ENABLE_FS_SYNC=true
+    # Newer Nextflow parses configs with the strict v2 parser, which rejects
+    # nf-core's ucl_myriad institutional config (withName inside an if {}).
+    export NXF_SYNTAX_PARSER=v1
     export NXF_SINGULARITY_CACHEDIR=$APPTAINER_CACHE/pull
     export TMPDIR=$APPTAINER_CACHE/tmp
     export APPTAINER_TMPDIR=$TMPDIR SINGULARITY_TMPDIR=$TMPDIR
