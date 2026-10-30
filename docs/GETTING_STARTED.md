@@ -15,7 +15,7 @@ run on a Myriad login node unless they say otherwise.
 
 - A Myriad account: https://www.rc.ucl.ac.uk/docs/Clusters/Myriad/
 - Access to the lab RDSS project (ask Amatta):
-  - `/rdss/rd02/ritd-ag-project-rd028n-amira43/reference_files`: references
+  - `/rdss/rd02/ritd-ag-project-rd028n-amira43/reference_files/WES_pipeline`: references
   - `/rdss/rd02/ritd-ag-project-rd028n-amira43/Shared_Scripts`: tool installs
 
 Everything big goes under `~/Scratch` (your home quota is small).
@@ -109,26 +109,26 @@ and `ggplot2` once from R.
 
 ```bash
 cd ~/Scratch/MyelomaLab_WES_Pipeline
-cp config/pipeline.config config/batch2.config
-cp config/samples.tsv     config/batch2_samples.tsv
+config/pipeline.config
+cp config/samples.tsv     [BATCH WORKING DIRECTORY]/samples.tsv
 ```
 
-In `config/batch2.config`, change:
+In `config/pipeline.config`, change:
 
 ```bash
-BATCH_NAME=WES_tumor_batch2
-SAMPLES=$PIPELINE_DIR/config/batch2_samples.tsv
+BATCH_NAME=BATCH WORKING DIRECTORY NAME
+SAMPLES=[BATCH WORKINGD IRECTORY]/samples.tsv
 ```
 
-Every output then goes under `~/Scratch/AMATTA/WES_tumor_batch2/`. Then, for this shell:
+Every output then goes under `~/Scratch/[BATCH WORKING IRECTORY]`. Then, for this shell:
 
 ```bash
-export PIPELINE_CONFIG=$PWD/config/batch2.config
+export PIPELINE_CONFIG=~/Scratch/MyelomaLab_WES_Pipeline/config/pipeline.config
 ```
 
 ### B2. The sample sheet
 
-Fill `config/batch2_samples.tsv` with **one row per FASTQ pair (lane)**.
+Fill samples.tsv` with **one row per FASTQ pair (lane)**.
 It's tab-separated and keeps the header row.
 
 | patient | sample | status | sex | lane | fastq_1 | fastq_2 | cram | bam |
