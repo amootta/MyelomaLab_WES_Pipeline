@@ -7,6 +7,7 @@
 #   ./wes.sh qc qualimap   Qualimap bamqc on each recal bam                       -> QC/qualimap/<S>/
 #   ./wes.sh qc multiqc    Qualimap multi-bamqc + MultiQC over QC/ and sarek's reports/
 #                                                       -> QC/qualimap/multi_bamqc/, QC/multiqc/
+#   HOLD=fastqc,qualimap ./wes.sh qc multiqc   queue multiqc now, held until both finish
 source "$(dirname "$0")/../../lib/common.sh"
 here=$PIPELINE_DIR/stages/10_qc
 
@@ -30,8 +31,10 @@ step_qualimap() {
     submit qualimap "$(wc -l < "$list")" "$here/qualimap.job.sh" "$list"
 }
 
+# HOLD=fastqc,qualimap queues this behind those jobs, so it is fine for their
+# output not to exist yet.
 step_multiqc() {
-    compgen -G "$QC_DIR/*/*" > /dev/null || [[ -d $SAREK_DIR/reports ]] ||
+    [[ -n ${HOLD:-} ]] || compgen -G "$QC_DIR/*/*" > /dev/null || [[ -d $SAREK_DIR/reports ]] ||
         die "nothing to summarise yet -- run qc fastqc / qc qualimap first"
     submit multiqc 1 "$here/multiqc.job.sh"
 }

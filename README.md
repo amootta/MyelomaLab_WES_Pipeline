@@ -68,7 +68,7 @@ A new batch: copy `config/pipeline.config` and `config/samples.tsv`, change
 | `sample` | unique per sample, e.g. `COS_001_037_BL`; lanes of one sample share it |
 | `status` | `0` normal, `1` tumour |
 | `sex` | `XX` / `XY`, used by sarek and PyClone. Defaults to `XX`; edit it per patient where known |
-| `lane`, `fastq_1`, `fastq_2` | for `wes.sh sarek fastq` |
+| `lane`, `fastq_1`, `fastq_2` | for `wes.sh sarek fastq`. A sample sequenced on several lanes gets one row per lane (same `sample`); sarek aligns each lane and merges them into one bam per sample. A repeated lane number within a sample is renamed `3_2` etc. automatically |
 | `cram` | optional: use this cram instead of sarek's (e.g. a manually merged one) |
 | `bam` | optional: use this bam instead of sarek's (e.g. germline bams from elsewhere) |
 

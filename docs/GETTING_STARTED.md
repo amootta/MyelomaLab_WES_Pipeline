@@ -41,7 +41,7 @@ Make sure `~/bin` is on your `PATH` in `~/.bashrc`, so SGE jobs find it too.
 You only need one install. mgp1000 is pinned to Nextflow 22.10.8 through
 `NXF_VER`, and Nextflow downloads that version itself the first time.
 
-### A4. Conda + the three environments
+### A4. Conda + the four environments
 
 ```bash
 cd ~/Scratch
@@ -53,7 +53,12 @@ cd ~/Scratch/MyelomaLab_WES_Pipeline
 conda env create -f envs/t1k.yml          # stages 04 + 05
 conda env create -f envs/hla-la.yml       # stage 04
 conda env create -f envs/pyclone-vi.yml   # stage 08
+conda env create -f envs/qc.yml           # stage 10: FastQC, Qualimap, MultiQC
 ```
+
+The jobs load conda themselves (`CONDA_SH`), but your login shell doesn't. If
+`conda` is "command not found", run the `source` line above, or add it to
+`~/.bashrc` so every session has it.
 
 HLA-LA also needs its reference graph. Copy `PRG_MHC_GRCh38_withIMGT` from
 the RDSS into the env:
@@ -83,6 +88,15 @@ elsewhere, point its variable in `config/pipeline.config` at it.
 | Myriad-adapted mgp1000 folder | `MGP1000_DIR` |
 | IgCaller + `IgCaller_reference_files/` + samtools wrapper | `IGCALLER_HOME`, `IGCALLER_SAMTOOLS` |
 | nextflow-pvacseq v1.0.0, IEDB, VEP plugins | `PVACSEQ_PIPELINE`, `PVACSEQ_IEDB`, `PVACSEQ_VEP_PLUGINS` |
+| exome capture BED (Agilent V6 padded, hg38), for Qualimap; optional | `QC_TARGET_BED` |
+
+Qualimap needs a 6-column BED (chrom, start, end, name, score, strand). If
+yours has 3 or 4 columns, pad it once:
+
+```bash
+awk 'BEGIN { OFS = "\t" } !/^(#|track|browser)/ { print $1, $2, $3, "t" NR, 0, "+" }' \
+    Exome-Agilent_V6_Padded_hg38.bed > Exome-Agilent_V6_Padded_hg38.6col.bed
+```
 
 For R (PyClone summaries, MMSig), `module load r`, then install `data.table`
 and `ggplot2` once from R.
@@ -188,6 +202,12 @@ Once the two QC jobs finish:
 
 ```bash
 ./wes.sh qc multiqc             # -> QC/multiqc/multiqc_report.html
+```
+
+Or queue it straight away, held until both QC jobs are done:
+
+```bash
+HOLD=fastqc,qualimap ./wes.sh qc multiqc
 ```
 
 ### C3. Gather the HLA calls (after the C2 HLA jobs)

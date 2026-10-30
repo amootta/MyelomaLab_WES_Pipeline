@@ -9,13 +9,24 @@
 source "$(dirname "$0")/../../lib/common.sh"
 here=$PIPELINE_DIR/stages/01_sarek
 
+# Every row of a sample is one lane: sarek maps each lane as its own read
+# group, then merges them into one bam per sample before MarkDuplicates/BQSR.
+# Read groups are named sample + lane, so a lane number repeated within a
+# sample (re-sequenced on another flowcell) gets a _2, _3 ... suffix.
 step_fastq() {
     local sheet=$SAMPLESHEET_DIR/sarek_fastq.csv
     mkdir -p "$SAMPLESHEET_DIR"
     awk -F'\t' 'BEGIN { OFS = "," }
         NR == 1 { for (i = 1; i <= NF; i++) c[$i] = i
                   print "patient", "sex", "status", "sample", "lane", "fastq_1", "fastq_2"; next }
-        $c["fastq_1"] != "" { print $c["patient"], $c["sex"], $c["status"], $c["sample"], $c["lane"], $c["fastq_1"], $c["fastq_2"] }
+        $c["fastq_1"] != "" {
+            lane = $c["lane"]
+            if (++seen[$c["sample"] SUBSEP lane] > 1) {
+                lane = lane "_" seen[$c["sample"] SUBSEP lane]
+                print "NOTE: " $c["sample"] " lane " $c["lane"] " listed more than once; this row becomes lane " lane > "/dev/stderr"
+            }
+            print $c["patient"], $c["sex"], $c["status"], $c["sample"], lane, $c["fastq_1"], $c["fastq_2"]
+        }
     ' "$SAMPLES" > "$sheet"
     need $(tail -n +2 "$sheet" | cut -d, -f6,7 | tr , ' ')
     log "wrote $sheet ($(($(wc -l < "$sheet") - 1)) lanes)"
