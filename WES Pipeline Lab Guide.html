@@ -1,0 +1,564 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>WES Pipeline Lab Guide</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column; the pipeline map and run sequence break out wider. */
+:root {
+  --bg: #f4f6f5;
+  --surface: #ffffff;
+  --sunk: #eaefee;
+  --ink: #14212b;
+  --muted: #56666f;
+  --line: #d3dcdd;
+  --accent: #0b6a70;
+  --accent-soft: #dcefee;
+  --g-setup: #56666f;
+  --g-sarek: #2b5da6;
+  --g-somatic: #a8402c;
+  --g-germline: #6a4d9e;
+  --g-down: #2b7a4b;
+  --code-bg: #10191f;
+  --code-fg: #d8e4e6;
+  --code-dim: #7f939b;
+  --warn: #8a5a00;
+  --warn-soft: #fbf0d9;
+  --f-display: "IBM Plex Sans Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1518; --surface: #152027; --sunk: #1b2830; --ink: #e2eaec; --muted: #94a5ad; --line: #2a3a42;
+    --accent: #55b8bd; --accent-soft: #163338;
+    --g-setup: #94a5ad; --g-sarek: #7ea9ea; --g-somatic: #ea8a74; --g-germline: #b69ce6; --g-down: #74c592;
+    --code-bg: #0a1013; --code-fg: #d8e4e6; --code-dim: #7c9098; --warn: #f0c46a; --warn-soft: #3a2f16;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1518; --surface: #152027; --sunk: #1b2830; --ink: #e2eaec; --muted: #94a5ad; --line: #2a3a42;
+  --accent: #55b8bd; --accent-soft: #163338;
+  --g-setup: #94a5ad; --g-sarek: #7ea9ea; --g-somatic: #ea8a74; --g-germline: #b69ce6; --g-down: #74c592;
+  --code-bg: #0a1013; --code-fg: #d8e4e6; --code-dim: #7c9098; --warn: #f0c46a; --warn-soft: #3a2f16;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--f-body); font-size: 16px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 72px;
+}
+.wrap { max-width: 1040px; margin: 0 auto; display: grid; gap: 56px; }
+.col { max-width: 720px; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; line-height: 1.15; margin: 0; }
+h1 { font-size: clamp(2.1rem, 5vw, 3.1rem); font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 1.75rem; font-weight: 600; }
+h3 { font-size: 1.15rem; font-weight: 600; }
+p { margin: 0; }
+a { color: var(--accent); }
+code, kbd { font-family: var(--f-mono); font-size: 0.88em; }
+p code, li code, td code { background: var(--sunk); padding: 0.1em 0.35em; border-radius: 4px; }
+.eyebrow { font-family: var(--f-mono); font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+.lede { font-size: 1.15rem; color: var(--muted); max-width: 62ch; }
+.stack { display: grid; gap: 16px; }
+.stack-s { display: grid; gap: 8px; }
+
+/* header */
+header.top { display: grid; gap: 18px; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font-family: var(--f-mono); font-size: 0.78rem; border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; color: var(--muted); background: var(--surface); }
+
+/* section heads */
+.sec-head { display: grid; gap: 8px; }
+.sec-head .part { font-family: var(--f-mono); font-size: 0.8rem; color: var(--muted); }
+
+/* figure */
+figure { margin: 0; display: grid; gap: 12px; }
+.map-box { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; padding: 16px; }
+.map-box svg { display: block; width: 100%; min-width: 860px; height: auto; }
+figcaption { font-size: 0.9rem; color: var(--muted); max-width: 70ch; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.85rem; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 12px; height: 12px; border-radius: 3px; border: 2px solid; display: inline-block; }
+
+.node rect { stroke-width: 1.5; }
+.node .t { font-family: var(--f-display); font-weight: 600; font-size: 15px; fill: var(--ink); }
+.node .s { font-family: var(--f-body); font-size: 11px; fill: var(--muted); }
+.edge { fill: none; stroke: var(--muted); stroke-width: 1.4; opacity: 0.75; }
+.edge.dash { stroke-dasharray: 5 4; }
+.edge-label { font-family: var(--f-mono); font-size: 10.5px; fill: var(--muted); }
+.lane-label { font-family: var(--f-mono); font-size: 10.5px; letter-spacing: 0.1em; fill: var(--muted); text-transform: uppercase; }
+
+/* checklist */
+.checklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.check { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; }
+.check input { width: 20px; height: 20px; margin: 3px 0 0; accent-color: var(--accent); cursor: pointer; }
+.check .body { min-width: 0; display: grid; gap: 10px; }
+.check label { font-family: var(--f-display); font-weight: 600; font-size: 1.1rem; cursor: pointer; }
+.check.done { background: var(--sunk); }
+.check.done label { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+.progress { font-family: var(--f-mono); font-size: 0.85rem; color: var(--muted); }
+
+/* code */
+.code { position: relative; background: var(--code-bg); color: var(--code-fg); border-radius: 8px; min-width: 0; }
+.code pre { margin: 0; padding: 14px 16px; overflow-x: auto; font-family: var(--f-mono); font-size: 0.84rem; line-height: 1.6; }
+.code .c { color: var(--code-dim); }
+.copy { position: absolute; top: 8px; right: 8px; font-family: var(--f-mono); font-size: 0.72rem; background: transparent; color: var(--code-dim); border: 1px solid #33454d; border-radius: 5px; padding: 3px 8px; cursor: pointer; }
+.copy:hover, .copy:focus-visible { color: var(--code-fg); border-color: var(--code-fg); }
+.code.has-copy pre { padding-right: 70px; }
+
+/* tables */
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--f-display); font-weight: 600; font-size: 0.85rem; letter-spacing: 0.03em; background: var(--sunk); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.mono { font-family: var(--f-mono); font-size: 0.8rem; white-space: nowrap; }
+
+/* run sequence */
+.phases { display: grid; gap: 22px; }
+.phase { display: grid; grid-template-columns: 56px 1fr; gap: 16px; }
+.phase .marker { display: grid; justify-items: center; align-content: start; gap: 6px; }
+.phase .dot { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-family: var(--f-display); font-weight: 700; color: var(--surface); }
+.phase .rail { width: 2px; flex: 1; background: var(--line); min-height: 40px; height: 100%; }
+.phase .content { min-width: 0; display: grid; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; }
+.phase .when { font-size: 0.88rem; color: var(--muted); }
+.pill { display: inline-block; font-family: var(--f-mono); font-size: 0.72rem; padding: 2px 8px; border-radius: 999px; border: 1px solid currentColor; }
+.cmdlist { display: grid; gap: 10px; }
+.cmdrow { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; }
+.cmdrow .what { font-size: 0.88rem; color: var(--muted); }
+.wait { display: flex; gap: 10px; align-items: baseline; font-size: 0.9rem; background: var(--warn-soft); color: var(--ink); border-radius: 6px; padding: 8px 12px; }
+.wait b { color: var(--warn); font-family: var(--f-mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; }
+
+/* two-up grids */
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.card p, .card li { font-size: 0.93rem; }
+.card ul { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; }
+
+.tree { font-family: var(--f-mono); font-size: 0.82rem; line-height: 1.7; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; overflow-x: auto; white-space: pre; }
+.tree .d { color: var(--muted); }
+
+.note { border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 12px 16px; border-radius: 0 8px 8px 0; font-size: 0.93rem; }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 560px) {
+  .phase { grid-template-columns: 1fr; }
+  .phase .marker { justify-items: start; grid-auto-flow: column; }
+  .phase .rail { display: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .check { transition: background-color .15s ease; }
+}
+</style>
+
+<div class="wrap">
+
+<header class="top col">
+  <div class="eyebrow">Myeloma Lab · UCL Myriad</div>
+  <h1>Running the WES pipeline</h1>
+  <p class="lede">Paired tumour–normal exomes in, then HLA and KIR typing, somatic consensus calls, neoantigens, clonality and mutational signatures out. Everything is driven by one command, <code>./wes.sh</code>, and two files you edit: a config and a sample sheet.</p>
+  <div class="meta">
+    <span class="chip">GRCh38</span><span class="chip">SGE + apptainer</span><span class="chip">nf-core/sarek 3.8.1</span><span class="chip">mgp1000 · Nextflow 22.10.8</span>
+  </div>
+</header>
+
+<figure>
+  <div class="sec-head col">
+    <span class="part">Figure 1</span>
+    <h2>How the pieces connect</h2>
+  </div>
+  <div class="map-box"><svg id="map" viewBox="0 0 1040 492" role="img" aria-label="Pipeline map: FASTQs feed sarek; sarek's bams feed mgp1000, HLA, KIR, IgCaller and QC; mgp1000 feeds the consensus step, which with the HLA calls feeds pVACseq, and with ASCAT feeds PyClone; the consensus tables feed signatures; the collected HLA calls and ASCAT feed LOHHLA; FastQC and Qualimap feed MultiQC."></svg></div>
+  <div class="legend">
+    <span><i style="border-color:var(--g-setup);background:var(--sunk)"></i>your inputs</span>
+    <span><i style="border-color:var(--g-sarek)"></i>01 sarek · 10 qc</span>
+    <span><i style="border-color:var(--g-somatic)"></i>somatic (per tumour/normal pair)</span>
+    <span><i style="border-color:var(--g-germline)"></i>germline (per patient, from the normal)</span>
+    <span><i style="border-color:var(--g-down)"></i>downstream analyses</span>
+  </div>
+  <figcaption>Each box is one <code>./wes.sh &lt;stage&gt; &lt;step&gt;</code> command. An arrow means "needs the output of". Boxes in the same column can run at the same time. Before submitting, every step checks that the files it needs exist, so running a step too early just prints what is missing.</figcaption>
+</figure>
+
+<section class="stack" id="install">
+  <div class="sec-head col">
+    <span class="part">Part A · once per person</span>
+    <h2>Install everything</h2>
+    <p class="col" style="color:var(--muted)">Do this on a Myriad login node. Big files go under <code>~/Scratch</code>, because your home quota is small. Your ticks are saved in this browser only.</p>
+    <span class="progress" id="prog-install"></span>
+  </div>
+  <ol class="checklist col" data-list="install">
+    <li class="check"><input type="checkbox" id="i-access"><div class="body"><label for="i-access">Get access</label>
+      <p>A Myriad account (<a href="https://www.rc.ucl.ac.uk/docs/Clusters/Myriad/" target="_blank" rel="noopener">UCL RC docs</a>), plus the lab RDSS project. Ask Amatta to add you. References are under <code>reference_files/WES_pipeline</code> and tool installs are under <code>Shared_Scripts</code>:</p>
+      <div class="code has-copy"><pre>/rdss/rd02/ritd-ag-project-rd028n-amira43/</pre></div></div></li>
+
+    <li class="check"><input type="checkbox" id="i-clone"><div class="body"><label for="i-clone">Get the pipeline</label>
+      <div class="code has-copy"><pre>cd ~/Scratch
+git clone https://github.com/amootta/MyelomaLab_WES_Pipeline.git
+cd MyelomaLab_WES_Pipeline</pre></div></div></li>
+
+    <li class="check"><input type="checkbox" id="i-nf"><div class="body"><label for="i-nf">Install Nextflow</label>
+      <div class="code has-copy"><pre>module load java/temurin-17/17.0.2_8
+mkdir -p ~/bin &amp;&amp; cd ~/bin
+curl -s https://get.nextflow.io | bash
+chmod +x nextflow</pre></div>
+      <p>Check that <code>~/bin</code> is on your <code>PATH</code> in <code>~/.bashrc</code>, so cluster jobs find Nextflow too. One install covers every step. mgp1000 asks for 22.10.8, and Nextflow downloads that version itself.</p></div></li>
+
+    <li class="check"><input type="checkbox" id="i-conda"><div class="body"><label for="i-conda">Conda and the environments</label>
+      <div class="code has-copy"><pre>cd ~/Scratch
+curl -LO https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
+bash Miniforge3-Linux-x86_64.sh -b -p ~/Scratch/miniforge3
+source ~/Scratch/miniforge3/etc/profile.d/conda.sh
+
+cd ~/Scratch/MyelomaLab_WES_Pipeline
+conda env create -f envs/t1k.yml          <span class="c"># HLA + KIR typing</span>
+conda env create -f envs/hla-la.yml       <span class="c"># HLA-LA</span>
+conda env create -f envs/pyclone-vi.yml   <span class="c"># PyClone-VI, alleleCounter, bcftools</span>
+conda env create -f envs/qc.yml           <span class="c"># FastQC, Qualimap, MultiQC</span>
+conda env create -f envs/lohhla.yml       <span class="c"># LOHHLA</span></pre></div>
+      <p>HLA-LA also needs its graph. Copy <code>PRG_MHC_GRCh38_withIMGT</code> from the RDSS into <code>~/Scratch/miniforge3/envs/hla-la/opt/hla-la/graphs/</code>.</p></div></li>
+
+    <li class="check"><input type="checkbox" id="i-tools"><div class="body"><label for="i-tools">Copy tools and references from the RDSS to Scratch</label>
+      <p>Everything the pipeline needs is in two RDSS folders: <code>reference_files/WES_pipeline</code> (references) and <code>Shared_Scripts</code> (tools, mostly zipped).</p>
+      <div class="note"><strong>Do this before running anything.</strong> Jobs read from Scratch, not from the RDSS. Copy both folders into <code>~/Scratch/AMATTA/reference_files</code> (<code>REF_DIR</code>) and unzip the zips there. Every batch shares this folder.</div>
+      <div class="code has-copy"><pre>RDSS=/rdss/rd02/ritd-ag-project-rd028n-amira43
+REF=~/Scratch/AMATTA/reference_files
+mkdir -p $REF &amp;&amp; cd $REF
+
+rsync -a --info=progress2 --exclude 'funcotator_dataSources*.zip' $RDSS/reference_files/WES_pipeline/ $REF/
+rsync -a --info=progress2 --exclude '*.zip' --exclude annovar --exclude pyclone $RDSS/Shared_Scripts/ $REF/
+for z in mgp1000 T1K KIRCLE IgCaller samtools_wrapper VEP_plugins; do unzip -qn $RDSS/Shared_Scripts/$z.zip -d $REF; done
+chmod +x $REF/samtools_wrapper
+unzip -qn ASCAT.zip                  <span class="c"># ASCAT/: leave the 4 zips inside zipped</span>
+unzip -qn chrfiles_controlfreec.zip  <span class="c"># chrfiles_controlfreec/</span></pre></div>
+      <p>Keep <code>hlahd.1.7.1.tar.gz</code> as a tarball. The pVACseq pipeline and the VEP 102 cache are large. If either is a <code>.zip</code> or <code>.tar.gz</code> on the RDSS, unpack it into <code>$REF</code> the same way, so <code>nextflow-pvacseq-v.1.0.0/main.nf</code> and <code>vep_cache/homo_sapiens/</code> exist. The copy takes a while, so run it in <code>screen</code>.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Should end up in REF_DIR</th><th>Config line</th><th>From</th></tr></thead>
+        <tbody>
+          <tr><td>GRCh38 no-alt FASTA + .fai + .dict</td><td class="mono">REF_FASTA, REF_FAI</td><td>reference_files</td></tr>
+          <tr><td>dbSNP, Mills indels, gnomAD AF, panel of normals</td><td class="mono">DBSNP, KNOWN_INDELS, GNOMAD_AF, PON</td><td>reference_files</td></tr>
+          <tr><td>funcotator_dataSources…/ (folder)</td><td class="mono">FUNCOTATOR_DS</td><td>reference_files</td></tr>
+          <tr><td>ASCAT/ (loci, alleles, GC, RT zips)</td><td class="mono">ASCAT_*</td><td>reference_files/ASCAT.zip</td></tr>
+          <tr><td>out100m2_hg38.gem, chrfiles_controlfreec/</td><td class="mono">MAPPABILITY, CONTROLFREEC_CHR_DIR</td><td>reference_files</td></tr>
+          <tr><td>Exome-Agilent_V6_Padded_hg38.bed</td><td class="mono">QC_TARGET_BED</td><td>reference_files</td></tr>
+          <tr><td>*.img container images</td><td class="mono">CONTAINER_LIBRARY</td><td>reference_files</td></tr>
+          <tr><td>T1K-1.0.10/ (hlaidx/, kiridx/)</td><td class="mono">T1K_DIR</td><td>Shared_Scripts/T1K.zip</td></tr>
+          <tr><td>KIRCLE/</td><td class="mono">KIRCLE_DIR</td><td>Shared_Scripts/KIRCLE.zip</td></tr>
+          <tr><td>hlatyping-patched/ + hlahd.1.7.1.tar.gz</td><td class="mono">HLATYPING_DIR, HLAHD_TARBALL</td><td>Shared_Scripts</td></tr>
+          <tr><td>mgp1000/ (references/, containers/)</td><td class="mono">MGP1000_DIR</td><td>Shared_Scripts/mgp1000.zip</td></tr>
+          <tr><td>IgCaller/ + samtools_wrapper</td><td class="mono">IGCALLER_HOME, IGCALLER_SAMTOOLS</td><td>Shared_Scripts zips</td></tr>
+          <tr><td>iedb/, VEP_plugins/</td><td class="mono">PVACSEQ_IEDB, PVACSEQ_VEP_PLUGINS</td><td>Shared_Scripts</td></tr>
+          <tr><td>nextflow-pvacseq-v.1.0.0/ (main.nf)</td><td class="mono">PVACSEQ_PIPELINE</td><td>RDSS</td></tr>
+          <tr><td>vep_cache/ (VEP 102: homo_sapiens/102_GRCh38/)</td><td class="mono">PVACSEQ_VEP_CACHE</td><td>RDSS</td></tr>
+        </tbody>
+      </table></div>
+      <p><strong>Then make sure everything is there.</strong> Fix each <code>MISSING</code> line, either by renaming the folder (for example, <code>T1K.zip</code> might unpack as <code>T1K/</code>) or by changing that line in <code>config/pipeline.config</code>. Keep going until it ends with <code>All good.</code></p>
+      <div class="code has-copy"><pre>cd ~/Scratch/MyelomaLab_WES_Pipeline
+./wes.sh check</pre></div></div></li>
+
+    <li class="check"><input type="checkbox" id="i-lohhla"><div class="body"><label for="i-lohhla">Install LOHHLA</label>
+      <div class="code has-copy"><pre>./wes.sh lohhla setup</pre></div>
+      <p>This runs once per <code>REF_DIR</code>, not per batch. It clones LOHHLA, patches it for hg38, and downloads the IMGT HLA sequences into <code>$REF_DIR/lohhla</code>. novoalign comes from Myriad's <code>novocraft</code> module.</p></div></li>
+
+    <li class="check"><input type="checkbox" id="i-r"><div class="body"><label for="i-r">R packages</label>
+      <p>Needed for PyClone summaries and MMSig. Run <code>module load r</code>, open R, and install <code>data.table</code>, <code>ggplot2</code> and <a href="https://github.com/evenrus/mmsig" target="_blank" rel="noopener">mmsig</a>.</p></div></li>
+  </ol>
+</section>
+
+<section class="stack" id="batch">
+  <div class="sec-head col">
+    <span class="part">Part B · once per batch</span>
+    <h2>Set up a batch</h2>
+    <span class="progress" id="prog-batch"></span>
+  </div>
+  <ol class="checklist col" data-list="batch">
+    <li class="check"><input type="checkbox" id="b-config"><div class="body"><label for="b-config">Name the batch</label>
+      <p>In <code>config/pipeline.config</code>, set the batch name. That name is the batch's working directory, so everything writes to <code>~/Scratch/AMATTA/WES_tumor_batch2/</code>.</p>
+      <div class="code"><pre>BATCH_NAME=WES_tumor_batch2</pre></div>
+      <p><code>SAMPLES</code> already points at <code>$HOME/Scratch/AMATTA/$BATCH_NAME/samples.tsv</code>. Make that folder and start the sample sheet from the template:</p>
+      <div class="code has-copy"><pre>cd ~/Scratch/MyelomaLab_WES_Pipeline
+mkdir -p ~/Scratch/AMATTA/WES_tumor_batch2
+cp config/samples.tsv ~/Scratch/AMATTA/WES_tumor_batch2/samples.tsv</pre></div>
+      <p>Tell <code>wes.sh</code> which config to use (once per login):</p>
+      <div class="code has-copy"><pre>export PIPELINE_CONFIG=~/Scratch/MyelomaLab_WES_Pipeline/config/pipeline.config</pre></div></div></li>
+
+    <li class="check"><input type="checkbox" id="b-sheet"><div class="body"><label for="b-sheet">Fill in the sample sheet</label>
+      <p>Tab-separated, one row per FASTQ pair (lane). Keep the header row.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>patient</th><th>sample</th><th>status</th><th>sex</th><th>lane</th><th>fastq_1 / fastq_2</th><th>cram</th><th>bam</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">COS_005_001</td><td class="mono">COS_005_001_PBMC</td><td class="mono">0</td><td class="mono">XX</td><td class="mono">3</td><td class="mono">…_PBMC_L3_1.fq.gz</td><td></td><td></td></tr>
+          <tr><td class="mono">COS_005_001</td><td class="mono">COS_005_001_BL</td><td class="mono">1</td><td class="mono">XX</td><td class="mono">3</td><td class="mono">…_BL_L3_1.fq.gz</td><td></td><td></td></tr>
+          <tr><td class="mono">COS_005_001</td><td class="mono">COS_005_001_BL</td><td class="mono">1</td><td class="mono">XX</td><td class="mono">4</td><td class="mono">…_BL_L4_1.fq.gz</td><td></td><td></td></tr>
+        </tbody>
+      </table></div>
+      <ul style="margin:0;padding-left:1.1em;display:grid;gap:6px">
+        <li><code>status</code> is <code>0</code> for the normal (PBMC/germline) and <code>1</code> for each tumour timepoint. Each patient needs one normal.</li>
+        <li>Two lanes of one sample share the <code>sample</code> name. Sarek merges them, so there's no need to merge by hand.</li>
+        <li>Use short names (<code>&lt;patient&gt;_&lt;timepoint&gt;</code>). Every output file is named after them.</li>
+        <li><code>sex</code> defaults to <code>XX</code>. Change it per patient where you know it.</li>
+        <li>Already have crams or bams? Put the path in <code>cram</code> or <code>bam</code> and leave the FASTQ columns empty.</li>
+      </ul></div></li>
+
+    <li class="check"><input type="checkbox" id="b-check"><div class="body"><label for="b-check">Check before you submit anything</label>
+      <div class="code has-copy"><pre>./wes.sh check</pre></div>
+      <div class="code"><pre><span class="c">reference + resources</span>
+  ok       REF_FASTA      ~/Scratch/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa
+  MISSING  PON            ~/Scratch/somatic-hg38_1000g_pon.hg38.vcf
+<span class="c">sample sheet</span>
+  line 7: status must be 0 (normal) or 1 (tumour)
+  6 patients, 6 normals, 12 tumours, 12 tumour/normal pairs</pre></div>
+      <p>Fix every <code>MISSING</code> path and every line it flags, until it ends with <code>All good.</code></p></div></li>
+  </ol>
+</section>
+
+<section class="stack" id="run">
+  <div class="sec-head col">
+    <span class="part">Part C · run it</span>
+    <h2>Run order</h2>
+    <p class="col" style="color:var(--muted)">Each command submits cluster jobs and returns straight away. Wait for the jobs to finish (<code>qstat</code> shows what's queued and running) before starting the next phase. Put <code>DRY_RUN=1</code> in front of any command to see what it would submit without submitting.</p>
+  </div>
+
+  <div class="phases">
+    <div class="phase">
+      <div class="marker"><div class="dot" style="background:var(--g-sarek)">1</div><div class="rail"></div></div>
+      <div class="content">
+        <h3>Align and call variants <span class="pill" style="color:var(--g-sarek)">01 sarek</span></h3>
+        <div class="cmdlist">
+          <div class="cmdrow"><span class="what">Full sarek run from FASTQs: alignment, base recalibration, Mutect2, Strelka, Manta, ASCAT, CNVkit. This is the longest step.</span><div class="code has-copy"><pre>./wes.sh sarek fastq</pre></div></div>
+        </div>
+        <div class="wait"><b>wait</b><span>for the <code>sarek_fastq</code> job to finish</span></div>
+        <div class="cmdlist">
+          <div class="cmdrow"><span class="what">Convert recalibrated crams to bams. Samples that already have a bam are skipped.</span><div class="code has-copy"><pre>./wes.sh sarek bams</pre></div></div>
+          <div class="cmdrow"><span class="what">Lab Mutect2 filters (VAF ≥ 0.01, MQ/BQ ≥ 20) plus a Funcotator MAF for each pair</span><div class="code has-copy"><pre>./wes.sh sarek filter_mutect2</pre></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="marker"><div class="dot" style="background:var(--g-somatic)">2</div><div class="rail"></div></div>
+      <div class="content">
+        <h3>Everything that needs the bams <span class="pill" style="color:var(--muted)">run together</span></h3>
+        <div class="cmdlist">
+          <div class="cmdrow"><span class="what">Somatic: Mutect2 + Strelka + VarScan consensus, Manta, Delly <span class="pill" style="color:var(--g-somatic)">02 mgp1000</span></span><div class="code has-copy"><pre>./wes.sh mgp1000 somatic</pre></div></div>
+          <div class="cmdrow"><span class="what">Germline: DeepVariant small variants and fastNGSadmix ancestry, once per normal. It can run at the same time as somatic. <span class="pill" style="color:var(--g-germline)">02 mgp1000</span></span><div class="code has-copy"><pre>./wes.sh mgp1000 germline</pre></div></div>
+          <div class="cmdrow"><span class="what">HLA typing on each normal, three ways <span class="pill" style="color:var(--g-germline)">04 hla</span></span><div class="code has-copy"><pre>./wes.sh hla t1k
+./wes.sh hla hlatyping     <span class="c"># OptiType + HLA-HD</span>
+./wes.sh hla hlala</pre></div></div>
+          <div class="cmdrow"><span class="what">KIR typing on each normal <span class="pill" style="color:var(--g-germline)">05 kir</span></span><div class="code has-copy"><pre>./wes.sh kir t1k
+./wes.sh kir kircle</pre></div></div>
+          <div class="cmdrow"><span class="what">IG rearrangements and translocations for each pair <span class="pill" style="color:var(--g-somatic)">06 igcaller</span></span><div class="code has-copy"><pre>./wes.sh igcaller run</pre></div></div>
+          <div class="cmdrow"><span class="what">Read and coverage QC for every sample. Qualimap reports on-target coverage over <code>QC_TARGET_BED</code>. <span class="pill" style="color:var(--g-sarek)">10 qc</span></span><div class="code has-copy"><pre>./wes.sh qc fastqc
+./wes.sh qc qualimap</pre></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="marker"><div class="dot" style="background:var(--g-germline)">3</div><div class="rail"></div></div>
+      <div class="content">
+        <h3>Gather typing and consensus calls</h3>
+        <div class="cmdlist">
+          <div class="cmdrow"><span class="what">After the HLA jobs: put every caller's HLA results in one place, then the optional comparison reports. The HLA report needs <code>HLA_TRUTH</code> set in the config.</span><div class="code has-copy"><pre>./wes.sh hla collect
+./wes.sh hla concordance   <span class="c"># optional</span>
+./wes.sh kir concordance   <span class="c"># optional</span></pre></div></div>
+          <div class="cmdrow"><span class="what">After mgp1000: variants called by at least 2 of the 3 callers. Only this batch's pairs are taken from the shared mgp1000 folder. <span class="pill" style="color:var(--g-somatic)">03 consensus</span></span><div class="code has-copy"><pre>./wes.sh consensus vcf     <span class="c"># per-tumour VCFs: pVACseq, PyClone</span>
+./wes.sh consensus isec    <span class="c"># variant tables: signatures</span></pre></div></div>
+          <div class="cmdrow"><span class="what">After the QC jobs: one report with FastQC, Qualimap and sarek's own metrics <span class="pill" style="color:var(--g-sarek)">10 qc</span></span><div class="code has-copy"><pre>./wes.sh qc multiqc        <span class="c"># QC/multiqc/multiqc_report.html</span>
+HOLD=fastqc,qualimap ./wes.sh qc multiqc   <span class="c"># or: queue it now, held until both finish</span></pre></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="marker"><div class="dot" style="background:var(--g-down)">4</div></div>
+      <div class="content">
+        <h3>Downstream analyses</h3>
+        <div class="cmdlist">
+          <div class="cmdrow"><span class="what">Neoantigens. The first command writes one HLA file per patient from the OptiType calls. Open those files and check the alleles before you run. <span class="pill" style="color:var(--g-down)">07 pvacseq</span></span><div class="code has-copy"><pre>./wes.sh pvacseq hla
+./wes.sh pvacseq run</pre></div></div>
+          <div class="cmdrow"><span class="what">Clonal structure across each patient's timepoints, from the consensus SNVs and ASCAT copy number <span class="pill" style="color:var(--g-down)">08 pyclone</span></span><div class="code has-copy"><pre>./wes.sh pyclone run</pre></div></div>
+          <div class="cmdrow"><span class="what">Builds one MMSig input table, which you then run in R. Calls are hg38 and mmsig defaults to hg19, so set the genome. <span class="pill" style="color:var(--g-down)">09 signatures</span></span><div class="code has-copy"><pre>./wes.sh signatures input</pre></div></div>
+          <div class="cmdrow"><span class="what">HLA class I loss of heterozygosity for each patient, from the collected HLA calls and ASCAT purity/ploidy. Check the <code>inputs</code> files before <code>run</code>. Each patient takes several hours. Details are in <code>docs/LOHHLA.md</code>. <span class="pill" style="color:var(--g-down)">11 lohhla</span></span><div class="code has-copy"><pre>./wes.sh lohhla inputs     <span class="c"># LOHHLA/&lt;patient&gt;/input/</span>
+./wes.sh lohhla run
+./wes.sh lohhla summary    <span class="c"># LOHHLA/LOHHLA_summary.tsv</span></pre></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="stack" id="everyday">
+  <div class="sec-head col">
+    <span class="part">Day to day</span>
+    <h2>Keeping track</h2>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h3>What has finished?</h3>
+      <div class="code has-copy"><pre>./wes.sh status</pre></div>
+      <div class="code"><pre>sample           type cram  bam   mut2f ascat cons.v hlaT1K ...
+COS_005_001_PBMC N    +     +                       +      ...
+COS_005_001_BL   T    +     +     +     +     .            ...</pre></div>
+      <p><code>+</code> means the output exists, <code>.</code> means it's still missing, and a blank means that step doesn't apply to this kind of sample.</p>
+    </div>
+    <div class="card">
+      <h3>A job failed</h3>
+      <ul>
+        <li>Logs: <code>~/Scratch/&lt;batch&gt;/logs/&lt;job&gt;.o&lt;id&gt;.&lt;task&gt;</code>. Array jobs have one file per sample.</li>
+        <li>Fix the cause, then run <strong>the same command again</strong>. The Nextflow steps (sarek, hlatyping, mgp1000, pVACseq) carry on from where they stopped.</li>
+        <li><code>ERROR: required input(s) missing</code> before anything was submitted means the previous step hasn't finished, or a config path is wrong. The lines above the error name each missing file.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Good to know</h3>
+      <ul>
+        <li>Every batch shares the mgp1000 install, but each batch runs in its own <code>mgp1000/</code> folder. The consensus step takes only the pairs whose tumour is in your sample sheet.</li>
+        <li>mgp1000 copies each bam with the read-group sample name fixed. Sarek's own bams are not changed.</li>
+        <li>If <code>consensus vcf</code> warns that a tumour has two VCFs, it was run through mgp1000 twice. Delete the one you don't want from mgp1000's output.</li>
+        <li>Other people's batches don't interfere with yours as long as each batch has its own config.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>More detail</h3>
+      <ul>
+        <li><code>docs/STAGES.md</code>: every step's inputs and outputs</li>
+        <li><code>docs/GETTING_STARTED.md</code>: the text version of this guide</li>
+        <li><code>./wes.sh</code> with no arguments lists every command</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="stack" id="outputs">
+  <div class="sec-head col">
+    <span class="part">Where things end up</span>
+    <h2>The batch folder</h2>
+  </div>
+<div class="tree">~/Scratch/AMATTA/WES_tumor_batch2/
+├── preprocessing/recalibrated/   <span class="d">crams; bams/ holds the converted bams</span>
+├── variant_calling/              <span class="d">sarek: mutect2, strelka, manta, ascat, cnvkit</span>
+├── mutect2_filtered/             <span class="d">re-filtered Mutect2 VCFs + Funcotator MAFs</span>
+├── mgp1000/output/               <span class="d">somatic/ and germline/ (mgp1000 is launched here)</span>
+├── consensus/
+│   ├── vcf/                      <span class="d">2-of-3 VCF per tumour</span>
+│   ├── pvacseq_input/&lt;patient&gt;/  <span class="d">the same VCFs, grouped by patient</span>
+│   └── isec/variant_tsv/         <span class="d">2-of-3 tables; isec/mmsig_input.tsv</span>
+├── HLA/                          <span class="d">T1K/, hlatyping/, HLA_LA/, calls/, HLA_typing_comparison.xlsx</span>
+├── KIR/                          <span class="d">T1K/, KIRCLE/, KIR_concordance.xlsx</span>
+├── IgCaller/&lt;tumour&gt;/
+├── pvacseq/                      <span class="d">hla/&lt;patient&gt;.csv, &lt;patient&gt;/ results</span>
+├── pyclone/&lt;patient&gt;/            <span class="d">results.tsv, cluster table, CCF plot</span>
+├── QC/                           <span class="d">fastqc/, qualimap/, multiqc/multiqc_report.html</span>
+├── LOHHLA/                       <span class="d">&lt;patient&gt;/input/ + results, LOHHLA_summary.tsv</span>
+├── samplesheets/                 <span class="d">generated for each tool; don't edit</span>
+└── logs/</div>
+</section>
+
+</div>
+
+<script>
+// ---- pipeline map --------------------------------------------------------
+(function () {
+  var W = 150, H = 50;
+  var N = {
+    fq:   { x: 16,  y: 235, g: "setup",    t: "FASTQs",            s: "+ samples.tsv" },
+    sarek:{ x: 190, y: 235, g: "sarek",    t: "sarek fastq",       s: "align · call · ASCAT" },
+    bams: { x: 364, y: 160, g: "sarek",    t: "sarek bams",        s: "cram → bam" },
+    filt: { x: 364, y: 40,  g: "sarek",    t: "filter_mutect2",    s: "→ Funcotator MAFs" },
+    mgp:  { x: 538, y: 50,  g: "somatic",  t: "mgp1000",           s: "somatic · germline" },
+    hla:  { x: 538, y: 140, g: "germline", t: "HLA typing",        s: "T1K · OptiType · HLA-LA" },
+    kir:  { x: 538, y: 230, g: "germline", t: "KIR typing",        s: "T1K · KIRCLE" },
+    ig:   { x: 538, y: 320, g: "somatic",  t: "igcaller run",      s: "per pair" },
+    cons: { x: 712, y: 50,  g: "somatic",  t: "consensus vcf/isec", s: "≥ 2 of 3 callers" },
+    coll: { x: 712, y: 140, g: "germline", t: "hla collect",       s: "+ concordance" },
+    kconc:{ x: 712, y: 230, g: "germline", t: "kir concordance",   s: "T1K vs truth" },
+    sig:  { x: 886, y: 0,   g: "down",     t: "signatures",        s: "MMSig input" },
+    pvac: { x: 886, y: 105, g: "down",     t: "pvacseq",           s: "neoantigens" },
+    pyc:  { x: 886, y: 200, g: "down",     t: "pyclone",           s: "clonality" },
+    loh:  { x: 886, y: 292, g: "down",     t: "lohhla",            s: "HLA loss of heterozygosity" },
+    qc:   { x: 538, y: 410, g: "sarek",    t: "qc",                s: "FastQC · Qualimap" },
+    mqc:  { x: 712, y: 410, g: "sarek",    t: "qc multiqc",        s: "one HTML report" }
+  };
+  N.sig.y = 4; N.pvac.y = 100; N.pyc.y = 196;
+  var E = [
+    ["fq","sarek"],["sarek","bams"],["sarek","filt"],
+    ["bams","mgp"],["bams","hla"],["bams","kir"],["bams","ig"],
+    ["mgp","cons"],["hla","coll"],["kir","kconc"],
+    ["cons","sig"],["cons","pvac"],["coll","pvac"],["cons","pyc"],["coll","loh"],
+    ["bams","qc"],["qc","mqc"],
+    ["sarek","pyc","dash","ASCAT copy number"]
+  ];
+  var ns = "http://www.w3.org/2000/svg", svg = document.getElementById("map");
+  function el(tag, attrs, parent) { var e = document.createElementNS(ns, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); (parent || svg).appendChild(e); return e; }
+  var lanes = [[16,"inputs"],[190,"stage 01"],[364,"stage 01"],[538,"run together"],[712,"gather"],[886,"analyses"]];
+  lanes.forEach(function (l) { el("text", { x: l[0] + 2, y: 486, "class": "lane-label" }).textContent = l[1]; });
+  var eg = el("g", {});
+  E.forEach(function (e) {
+    var a = N[e[0]], b = N[e[1]];
+    var x1 = a.x + W, y1 = a.y + H / 2, x2 = b.x, y2 = b.y + H / 2;
+    if (e[2] === "dash") {
+      // route under the germline column, then up into pyclone
+      var yb = 392;
+      var d = "M" + x1 + " " + (y1 + 10) + " C" + (x1 + 60) + " " + (y1 + 10) + " " + (x1 + 40) + " " + yb + " " + (x1 + 120) + " " + yb +
+              " L" + (x2 - 70) + " " + yb + " C" + (x2 - 20) + " " + yb + " " + (x2 - 40) + " " + y2 + " " + x2 + " " + y2;
+      el("path", { d: d, "class": "edge dash" }, eg);
+      el("text", { x: 690, y: yb - 6, "class": "edge-label" }, eg).textContent = e[3];
+    } else {
+      var mx = (x1 + x2) / 2;
+      el("path", { d: "M" + x1 + " " + y1 + " C" + mx + " " + y1 + " " + mx + " " + y2 + " " + (x2 - 6) + " " + y2, "class": "edge", "marker-end": "url(#arr)" }, eg);
+    }
+  });
+  var defs = el("defs", {});
+  var m = el("marker", { id: "arr", viewBox: "0 0 8 8", refX: "6", refY: "4", markerWidth: "7", markerHeight: "7", orient: "auto" }, defs);
+  el("path", { d: "M0 0 L8 4 L0 8 z", style: "fill: var(--muted)" }, m);
+  Object.keys(N).forEach(function (k) {
+    var n = N[k], g = el("g", { "class": "node" });
+    el("rect", { x: n.x, y: n.y, width: W, height: H, rx: 8, style: "fill: " + (n.g === "setup" ? "var(--sunk)" : "var(--surface)") + "; stroke: var(--g-" + n.g + ")" }, g);
+    el("rect", { x: n.x, y: n.y + 8, width: 3, height: H - 16, rx: 1.5, style: "fill: var(--g-" + n.g + ")" }, g);
+    el("text", { x: n.x + 14, y: n.y + 21, "class": "t" }, g).textContent = n.t;
+    el("text", { x: n.x + 14, y: n.y + 38, "class": "s" }, g).textContent = n.s;
+  });
+})();
+
+// ---- copy buttons --------------------------------------------------------
+document.querySelectorAll(".code.has-copy").forEach(function (box) {
+  var b = document.createElement("button");
+  b.type = "button"; b.className = "copy"; b.textContent = "Copy";
+  b.addEventListener("click", function () {
+    var text = box.querySelector("pre").innerText.split("\n").map(function (l) { return l.replace(/\s+#.*$/, ""); }).join("\n").trim();
+    function ok() { b.textContent = "Copied"; setTimeout(function () { b.textContent = "Copy"; }, 1400); }
+    function fallback() { var r = document.createRange(); r.selectNodeContents(box.querySelector("pre")); var s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = "Selected"; }
+    try { navigator.clipboard.writeText(text).then(ok, fallback); } catch (e) { fallback(); }
+  });
+  box.appendChild(b);
+});
+
+// ---- checklists (remembered in this browser only) -------------------------
+(function () {
+  var KEY = "wes-guide-checks";
+  var state = {};
+  try { state = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { state = {}; }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+  function refresh() {
+    document.querySelectorAll(".checklist").forEach(function (list) {
+      var boxes = list.querySelectorAll("input[type=checkbox]"), done = 0;
+      boxes.forEach(function (c) { c.closest(".check").classList.toggle("done", c.checked); if (c.checked) done++; });
+      var p = document.getElementById("prog-" + list.dataset.list);
+      if (p) p.textContent = done + " of " + boxes.length + " done";
+    });
+  }
+  document.querySelectorAll(".checklist input[type=checkbox]").forEach(function (c) {
+    c.checked = !!state[c.id];
+    c.addEventListener("change", function () { state[c.id] = c.checked; save(); refresh(); });
+  });
+  refresh();
+})();
+</script>
+
+</body></html>

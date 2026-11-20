@@ -1,0 +1,23 @@
+# conda env create -f envs/lohhla.yml
+# LOHHLA (stage 11). The script itself is not packaged; `wes.sh lohhla setup`
+# clones it from bitbucket.org/mcgranahanlab/lohhla.
+#  * novoalign < 4: v3 runs without a licence file (single-threaded); v4 needs one.
+#  * picard 2.x: LOHHLA calls SamToFastq / SortSam / FilterSamReads with the old
+#    I=... syntax. setup rewrites "<dir>/SamToFastq.jar" to "<dir>/picard.jar SamToFastq"
+name: lohhla
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - r-base=4.3
+  - r-optparse
+  - r-seqinr
+  - r-beeswarm
+  - r-zoo
+  - bioconductor-biostrings
+  - bioconductor-rsamtools
+  - samtools=1.17
+  - bedtools
+  - kmer-jellyfish   # jellyfish 2.x. Not bioconda "jellyfish": that is 1.x, also installs bin/jellyfish, and LOHHLA needs 2
+  - picard=2.27.5
+  - openjdk=17

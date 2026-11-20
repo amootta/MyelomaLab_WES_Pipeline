@@ -1,0 +1,9 @@
+# conda env create -f envs/t1k.yml   (stages 04 and 05)
+# Only T1K is pinned: an exported list of every library (zlib, openssl, curl...)
+# stops conda from finding a samtools 0.1.19 build that fits T1K's zlib.
+name: t1k
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - t1k=1.0.10
