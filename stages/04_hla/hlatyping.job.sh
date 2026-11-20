@@ -9,6 +9,7 @@
 source "$PIPELINE_DIR/lib/common.sh"
 sheet=$1
 nextflow_env
+export NXF_SYNTAX_PARSER=v1
 
 # Launch from the batch's HLA folder so work/ and .nextflow/ stay per batch;
 # the checkout in HLATYPING_DIR is shared.

@@ -70,8 +70,14 @@ import re
 import sys
 
 import pandas as pd
-from openpyxl.styles import Alignment, Font, PatternFill
-from openpyxl.utils import get_column_letter
+
+# openpyxl is only needed to write the workbook; build_pvacseq_hla.py imports
+# the parsers below and must run without it.
+try:
+    from openpyxl.styles import Alignment, Font, PatternFill
+    from openpyxl.utils import get_column_letter
+except ImportError:
+    Alignment = Font = PatternFill = get_column_letter = None
 
 # ---------------------------------------------------------------------------
 # Constants / gene schema
@@ -92,12 +98,13 @@ CORE_GENES = ["A", "B", "C", "F", "G"]
 
 MISSING_TOKENS = {"", "-", ".", "not typed", "nottyped", "nan", "none", "na", "n/a"}
 
-FILL_MATCH = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
-FILL_PARTIAL = PatternFill(start_color="FFEB9C", end_color="FFEB9C", fill_type="solid")
-FILL_MISMATCH = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
-FILL_NA = PatternFill(start_color="D9D9D9", end_color="D9D9D9", fill_type="solid")
-FILL_HEADER = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
-FONT_HEADER = Font(color="FFFFFF", bold=True)
+if PatternFill is not None:
+    FILL_MATCH = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
+    FILL_PARTIAL = PatternFill(start_color="FFEB9C", end_color="FFEB9C", fill_type="solid")
+    FILL_MISMATCH = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
+    FILL_NA = PatternFill(start_color="D9D9D9", end_color="D9D9D9", fill_type="solid")
+    FILL_HEADER = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+    FONT_HEADER = Font(color="FFFFFF", bold=True)
 
 
 # ---------------------------------------------------------------------------
@@ -599,6 +606,8 @@ def main():
     p.add_argument("--quality-threshold", type=float, default=1.0, help="T1K quality below this -> flagged T1K_LowConfidence (default 1)")
     p.add_argument("--out", default="HLA_typing_comparison.xlsx", help="Output workbook path")
     args = p.parse_args()
+    if PatternFill is None:
+        sys.exit("hla_concordance.py needs openpyxl to write workbooks: pip install --user openpyxl")
 
     if args.truth_template:
         write_truth_template(args.truth_template)

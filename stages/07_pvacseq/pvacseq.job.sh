@@ -11,6 +11,10 @@ nextflow_env   # sets TMPDIR on Scratch -- needed for the pvactools image pull
 out=$PVACSEQ_DIR/$p
 mkdir -p "$out"
 cd "$out"
+# A cache folder already in place saves the ~20 GB VEP download in every
+# patient's run; without one the pipeline downloads it itself.
+vep_cache=()
+[[ -n ${PVACSEQ_VEP_CACHE:-} && -d $PVACSEQ_VEP_CACHE ]] && vep_cache=(--vep_cache "$PVACSEQ_VEP_CACHE" --vep_cache_version "$PVACSEQ_VEP_CACHE_VERSION")
 nextflow run "$PVACSEQ_PIPELINE" \
     -profile "$PVACSEQ_PROFILE" \
     -c "$PIPELINE_DIR/config/nextflow/myriad_pvacseq.config" \
@@ -22,4 +26,5 @@ nextflow run "$PVACSEQ_PIPELINE" \
     --outdir "$out" \
     --pvacseq_iedb "$PVACSEQ_IEDB" \
     --vep_plugins "$PVACSEQ_VEP_PLUGINS" \
+    "${vep_cache[@]}" \
     --pvacseq_algorithm "$PVACSEQ_ALGORITHMS"

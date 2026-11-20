@@ -6,8 +6,8 @@ source "$(dirname "$0")/../lib/common.sh"
 mark() { if have "$@"; then printf '%-7s' +; else printf '%-7s' .; fi; }
 blank() { printf '%-7s' ""; }
 
-printf '%-26s %-4s %-7s%-7s%-7s%-7s%-7s%-7s%-7s%-7s%-7s%-7s%-7s%-7s%-7s%-7s\n' \
-    sample type cram bam mut2f ascat cons.v hlaT1K hlaOpt hlaLA kirT1K igcall pyclon germ.v ancest qmap
+printf '%-26s %-4s %-7s%-7s%-7s%-7s%-7s%-7s%-7s%-7s%-7s%-7s%-7s%-7s%-7s%-7s%-7s\n' \
+    sample type cram bam mut2f ascat cons.v hlaT1K hlaOpt hlaLA kirT1K igcall pyclon germ.v ancest qmap lohhla
 while IFS=$'\t' read -r p s st _; do
     printf '%-26s %-4s ' "$s" "$([[ $st == 0 ]] && echo N || echo T)"
     mark "$(recal_cram "$s")"
@@ -40,6 +40,10 @@ while IFS=$'\t' read -r p s st _; do
         mark "$MGP1000_GERMLINE_DIR/$s/$s.fastngsadmix.23.qopt"
     fi
     mark "$QC_DIR/qualimap/$s/genome_results.txt"
+    # LOHHLA runs per patient; + once the patient's prediction table exists
+    if [[ $st == 1 ]]; then
+        if compgen -G "$LOHHLA_DIR/$p/*HLAlossPrediction_CI*" > /dev/null; then printf '%-7s' +; else printf '%-7s' .; fi
+    else blank; fi
     echo
 done < <(sample_rows)
 

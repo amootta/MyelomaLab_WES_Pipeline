@@ -199,6 +199,7 @@ nextflow_env() {
     # nf-core's ucl_myriad institutional config (withName inside an if {}).
     export NXF_SYNTAX_PARSER=v1
     export NXF_SINGULARITY_CACHEDIR=$APPTAINER_CACHE/pull
+    [[ -n ${CONTAINER_LIBRARY:-} ]] && export NXF_SINGULARITY_LIBRARYDIR=$CONTAINER_LIBRARY
     export TMPDIR=$APPTAINER_CACHE/tmp
     export APPTAINER_TMPDIR=$TMPDIR SINGULARITY_TMPDIR=$TMPDIR
     mkdir -p "$TMPDIR" "$NXF_SINGULARITY_CACHEDIR"

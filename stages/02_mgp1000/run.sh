@@ -17,15 +17,17 @@ here=$PIPELINE_DIR/stages/02_mgp1000
 # germline.nf strips ".final...bam", so both name outputs after the sample.
 # Hard links, not symlinks: mgp1000's containers only see the bound input
 # folder, so a symlink pointing elsewhere on Scratch would dangle inside them.
-# Falls back to a copy across filesystems.
+# Falls back to a copy across filesystems. mgp1000.job.sh later swaps in a
+# copy with the read-group SM renamed; a staged file newer than its source is
+# that copy, so it is kept (relinking would undo it and re-run every task).
 stage_bam() {  # stage_bam <sample>
     local src dst idx
     src=$(recal_bam "$1") dst=$MGP1000_INPUT_DIR/$1.final.bam
     need "$src"
-    [[ $src -ef $dst ]] || ln -f "$src" "$dst" 2> /dev/null || cp "$src" "$dst"
+    [[ $src -ef $dst || $dst -nt $src ]] || ln -f "$src" "$dst" 2> /dev/null || cp "$src" "$dst"
     for idx in "$src.bai" "${src%.bam}.bai"; do
         if [[ -e $idx ]]; then
-            [[ $idx -ef $dst.bai ]] || ln -f "$idx" "$dst.bai" 2> /dev/null || cp "$idx" "$dst.bai"
+            [[ $idx -ef $dst.bai || $dst.bai -nt $idx ]] || ln -f "$idx" "$dst.bai" 2> /dev/null || cp "$idx" "$dst.bai"
             return
         fi
     done

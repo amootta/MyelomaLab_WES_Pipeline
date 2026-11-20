@@ -24,6 +24,9 @@ for v in CONDA_SH T1K_DIR KIRCLE_DIR HLATYPING_DIR HLAHD_TARBALL IGCALLER_HOME I
     check "$v" "${!v}"
 done
 [[ -n $QC_TARGET_BED ]] && check QC_TARGET_BED "$QC_TARGET_BED"
+# stage 11 (optional): filled by `wes.sh lohhla setup`
+if [[ -e ${LOHHLA_SCRIPT:-/nonexistent} ]]; then check LOHHLA_SCRIPT "$LOHHLA_SCRIPT"; check LOHHLA_HLA_FASTA "$LOHHLA_HLA_FASTA"
+else echo "  note     LOHHLA not set up yet (stage 11 only) -- run: ./wes.sh lohhla setup"; fi
 command -v nextflow > /dev/null && echo "  ok       nextflow               $(command -v nextflow)" \
     || { echo "  MISSING  nextflow               (not on PATH)"; bad=1; }
 command -v qsub > /dev/null || echo "  note     qsub not on PATH -- run this on a Myriad login node"

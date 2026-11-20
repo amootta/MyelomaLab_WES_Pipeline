@@ -26,6 +26,66 @@ esac
 # batch's MGP1000_RUN_DIR keeps work/, .nextflow/ and output/ per batch.
 mkdir -p "$MGP1000_RUN_DIR"
 cd "$MGP1000_RUN_DIR"
+# mgp1000 names its images and reference files by relative path
+# (containers/<tool>.simg, references/hg38/...), which Nextflow looks for in
+# the launch dir, so link the install's folders here.
+[[ -e containers ]] || ln -s "$MGP1000_DIR/containers" containers
+# references/ is this batch's own copy of links into the install, except that
+# Homo_sapiens_assembly38.fasta/.fai/.dict point at REF_FASTA: the bams come
+# from sarek on REF_FASTA, and Manta/Strelka/GATK refuse a FASTA with contigs
+# the bams lack (the GATK hg38 has ~3,400, the no-alt set 195). The bwa index
+# (.fasta.64.*) is left out; only SvABA uses it, and it is off.
+[[ -L references ]] && rm references   # older runs linked the whole folder
+for d in "$MGP1000_DIR"/references/*/; do
+    d=${d%/} sub=references/$(basename "$d")
+    mkdir -p "$sub"
+    for f in "$d"/*; do
+        case $(basename "$f") in Homo_sapiens_assembly38.fasta*|Homo_sapiens_assembly38.dict) continue ;; esac
+        ln -sfn "$f" "$sub/$(basename "$f")"
+    done
+done
+for f in "$MGP1000_DIR"/references/*; do
+    [[ -d $f ]] || ln -sfn "$f" "references/$(basename "$f")"
+done
+need "$REF_FASTA" "$REF_FAI"
+ln -sfn "$REF_FASTA" references/hg38/Homo_sapiens_assembly38.fasta
+ln -sfn "$REF_FAI" references/hg38/Homo_sapiens_assembly38.fasta.fai
+dict=references/hg38/Homo_sapiens_assembly38.dict
+if [[ -e ${REF_FASTA%.*}.dict ]]; then
+    ln -sfn "${REF_FASTA%.*}.dict" "$dict"
+elif [[ ! -f $dict || -L $dict ]]; then   # no dict beside REF_FASTA: make one here
+    rm -f "$dict"
+    samtools dict -o "$dict" "$REF_FASTA"
+fi
+# sarek names each read group's sample <patient>_<sample>, but mgp1000 passes
+# the bare sample (e.g. Mutect2 --normal-sample), so give each staged bam that
+# needs it a new header and index. These are new files that replace the hard
+# links, so sarek's own bam and .bai are never written through. somatic and
+# germline may start together, hence the lock.
+exec 9> "$MGP1000_INPUT_DIR/.rename_sm.lock"
+flock 9
+for bam in "$MGP1000_INPUT_DIR"/*.final.bam; do
+    s=$(basename "$bam" .final.bam)
+    samtools view -H "$bam" | awk -F'\t' -v sm="SM:$s" '
+        /^@RG/ { for (i = 2; i <= NF; i++) if ($i ~ /^SM:/ && $i != sm) bad = 1 }
+        END { exit !bad }' || continue
+    log "$s: setting read-group SM to $s in $bam"
+    samtools view -H "$bam" | awk -v sm="SM:$s" 'BEGIN { FS = OFS = "\t" }
+        /^@RG/ { for (i = 2; i <= NF; i++) if ($i ~ /^SM:/) $i = sm } 1' > "$bam.hdr"
+    samtools reheader "$bam.hdr" "$bam" > "$bam.tmp"
+    mv "$bam.tmp" "$bam"
+    rm -f "$bam.hdr" "$bam.bai"
+    samtools index -@ 2 "$bam"
+done
+flock -u 9
+# somatic and germline share this launch dir, so a bare -resume would pick
+# whichever ran last (and fail on its lock if it is still running). Resume
+# this workflow's own last session instead (history: ... session id, command).
+# A session belongs to the workflow it was first started with: a germline run
+# that resumed somatic's session by mistake is logged under somatic's id.
+sid=$(awk -F'\t' -v nf="/$workflow.nf" '!($6 in first) { first[$6] = $7 } index(first[$6], nf) { s = $6 } END { print s }' .nextflow/history 2>/dev/null)
+resume=(-resume ${sid:+"$sid"})
+[[ -z $sid && -s .nextflow/history ]] && resume=()   # first run of this workflow here
 # shellcheck disable=SC2086  # $tools is a list of flags
 nextflow run "$MGP1000_DIR/$workflow.nf" \
     --run_id "${MGP1000_RUN_ID}_$workflow" \
@@ -37,7 +97,7 @@ nextflow run "$MGP1000_DIR/$workflow.nf" \
     --executor sge \
     -profile "$workflow" \
     $tools \
-    -resume
+    "${resume[@]}"
 
 # --- not wired into wes.sh ---------------------------------------------------
 # Preprocessing from FASTQs (instead of sarek's bams), once per sample, before

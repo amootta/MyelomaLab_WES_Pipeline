@@ -8,6 +8,9 @@
 # and called a summary script name that did not exist.
 # usage: pyclone.job.sh <list of patients>
 source "$PIPELINE_DIR/lib/common.sh"
+
+module load bcftools
+module load samtools
 p=$(task_line < "$1")
 dir=$PYCLONE_DIR/$p
 man=$dir/manifest.tsv

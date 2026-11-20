@@ -41,7 +41,7 @@ Make sure `~/bin` is on your `PATH` in `~/.bashrc`, so SGE jobs find it too.
 You only need one install. mgp1000 is pinned to Nextflow 22.10.8 through
 `NXF_VER`, and Nextflow downloads that version itself the first time.
 
-### A4. Conda + the four environments
+### A4. Conda + the environments
 
 ```bash
 cd ~/Scratch
@@ -54,11 +54,15 @@ conda env create -f envs/t1k.yml          # stages 04 + 05
 conda env create -f envs/hla-la.yml       # stage 04
 conda env create -f envs/pyclone-vi.yml   # stage 08
 conda env create -f envs/qc.yml           # stage 10: FastQC, Qualimap, MultiQC
+conda env create -f envs/lohhla.yml       # stage 11: LOHHLA
 ```
 
 The jobs load conda themselves (`CONDA_SH`), but your login shell doesn't. If
 `conda` is "command not found", run the `source` line above, or add it to
 `~/.bashrc` so every session has it.
+
+`envs/t1k.yml` pins only T1K on purpose: pinning every library stops conda
+from finding a samtools 0.1.19 build that works with T1K.
 
 HLA-LA also needs its reference graph. Copy `PRG_MHC_GRCh38_withIMGT` from
 the RDSS into the env:
@@ -84,11 +88,13 @@ elsewhere, point its variable in `config/pipeline.config` at it.
 | ASCAT loci/alleles/GC/RT, mappability, Control-FREEC chr files | `ASCAT_*`, `MAPPABILITY`, `CONTROLFREEC_CHR_DIR` |
 | T1K folder (has `hlaidx/`, `kiridx/`) | `T1K_DIR` |
 | KIRCLE folder (has `KIRCLE/`, `ref_files/`) | `KIRCLE_DIR` |
-| patched nf-core/hlatyping checkout + `hlahd.1.7.1.tar.gz` | `HLATYPING_DIR`, `HLAHD_TARBALL` |
+| patched nf-core/hlatyping checkout (`hlatyping-patched/`) + `hlahd.1.7.1.tar.gz` | `HLATYPING_DIR`, `HLAHD_TARBALL` |
 | Myriad-adapted mgp1000 folder | `MGP1000_DIR` |
-| IgCaller + `IgCaller_reference_files/` + samtools wrapper | `IGCALLER_HOME`, `IGCALLER_SAMTOOLS` |
+| IgCaller + `IgCaller_reference_files/` + `samtools_wrapper` | `IGCALLER_HOME`, `IGCALLER_SAMTOOLS` |
 | nextflow-pvacseq v1.0.0, IEDB, VEP plugins | `PVACSEQ_PIPELINE`, `PVACSEQ_IEDB`, `PVACSEQ_VEP_PLUGINS` |
-| exome capture BED (Agilent V6 padded, hg38), for Qualimap; optional | `QC_TARGET_BED` |
+| VEP cache, version 102 (`vep_cache/`). Without it, every patient's pVACseq run downloads ~20 GB | `PVACSEQ_VEP_CACHE`, `PVACSEQ_VEP_CACHE_VERSION` |
+| exome capture BED (Agilent V6 padded, hg38), for Qualimap | `QC_TARGET_BED` |
+| pre-pulled apptainer images (optional; Nextflow pulls anything missing) | `CONTAINER_LIBRARY` |
 
 Qualimap needs a 6-column BED (chrom, start, end, name, score, strand). If
 yours has 3 or 4 columns, pad it once:
@@ -241,6 +247,21 @@ For signatures, run MMSig in R on `mmsig_input.tsv`
 (https://github.com/evenrus/mmsig). These calls are **hg38** and mmsig
 defaults to hg19, so set the genome when you run it.
 
+### C6. HLA loss of heterozygosity (LOHHLA, stage 11)
+
+Needs sarek's bams and ASCAT (C1) and `hla collect` (C3). It can run alongside
+C5. Once per `REF_DIR` (not per batch), install it with `./wes.sh lohhla setup`.
+Then, per batch:
+
+```bash
+./wes.sh lohhla inputs     # LOHHLA/<P>/input/: bams, hla_alleles.txt, solutions.txt
+#   -> check hla_alleles.txt and solutions.txt, then:
+./wes.sh lohhla run        # one SGE task per patient (~hours each)
+./wes.sh lohhla summary    # LOHHLA/LOHHLA_summary{,_wide}.tsv
+```
+
+Details, settings and how to read the output: [LOHHLA.md](LOHHLA.md).
+
 ### Order at a glance
 
 ```
@@ -248,6 +269,7 @@ C1 sarek fastq ─► sarek bams ─┬─► mgp1000 ─► consensus vcf ─�
                               │                │            └─► pyclone run
                               │                └─► consensus isec ─► signatures
                               ├─► hla (t1k, hlatyping, hlala) ─► hla collect ─┘(feeds pvacseq hla)
+                              │                                     └─► lohhla (+ ASCAT)
                               ├─► kir (t1k, kircle)
                               ├─► igcaller
                               └─► qc (fastqc, qualimap) ─► qc multiqc

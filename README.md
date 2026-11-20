@@ -5,7 +5,8 @@ Myeloma Lab, set up for UCL Myriad (SGE + apptainer).
 
 Germline calls (HLA, KIR) come from each patient's normal. Somatic calls and
 everything downstream (consensus SNVs, IgCaller, neoantigens, clonality,
-signatures) are per tumour/normal pair.
+signatures) are per tumour/normal pair. HLA loss of heterozygosity (LOHHLA)
+is per patient, across all of its tumours.
 
 ```
 FASTQ ──► 01 sarek ──► recal crams/bams, Mutect2, Strelka, ASCAT, CNVkit, Manta
@@ -15,14 +16,17 @@ FASTQ ──► 01 sarek ──► recal crams/bams, Mutect2, Strelka, ASCAT, CN
                 ├──► 04 HLA   (T1K, OptiType/HLA-HD, HLA-LA)  on normals
                 ├──► 05 KIR   (T1K, KIRCLE)                   on normals
                 ├──► 06 IgCaller                              per pair
-                └──► 08 PyClone-VI  (03 consensus + ASCAT)    per patient
+                ├──► 08 PyClone-VI  (03 consensus + ASCAT)    per patient
+                ├──► 10 QC      (FastQC, Qualimap, MultiQC)   every sample
+                └──► 11 LOHHLA  (04 HLA calls + ASCAT)        per patient
 ```
 
 **New here? [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)** walks through
 installing everything, setting up a batch and running it from FASTQs.
 
 **[docs/STAGES.md](docs/STAGES.md)** lists, for every step, what it reads,
-what it writes and where.
+what it writes and where. [docs/LOHHLA.md](docs/LOHHLA.md) covers stage 11
+in more depth.
 
 ## Layout
 
@@ -35,7 +39,7 @@ what it writes and where.
 | `stages/NN_name/` | `run.sh` (checks inputs, submits) + `*.job.sh` (the SGE jobs) |
 | `bin/` | Python/R helpers (consensus filtering, VCF conversion, concordance, PyClone) |
 | `lib/common.sh` | shared helpers: sample lookups, file locations, `qsub` wrapper |
-| `envs/` | conda environments (T1K, HLA-LA, PyClone-VI, QC) |
+| `envs/` | conda environments (T1K, HLA-LA, PyClone-VI, QC, LOHHLA) |
 
 ## Quick start (on a Myriad login node)
 
@@ -89,13 +93,15 @@ Point the matching variable in `config/pipeline.config` at each one.
 | T1K | `conda env create -f envs/t1k.yml` + T1K folder from RDSS (has `hlaidx/`, `kiridx/`) | `T1K_DIR` |
 | KIRCLE | KIRCLE zip from RDSS | `KIRCLE_DIR` |
 | HLA-LA | `conda env create -f envs/hla-la.yml`, then copy `PRG_MHC_GRCh38_withIMGT` from RDSS into `<env>/opt/hla-la/graphs/` | — |
-| nf-core/hlatyping | the patched checkout (in `$REF_DIR/hlatyping`), launched from `$HLA_DIR` | `HLATYPING_DIR` |
+| nf-core/hlatyping | the patched checkout (in `$REF_DIR/hlatyping-patched`), launched from `$HLA_DIR` | `HLATYPING_DIR` |
 | HLA-HD | `hlahd.1.7.1.tar.gz` from RDSS (passed to hlatyping as `--hlahd_path`) | `HLAHD_TARBALL` |
 | MGP1000 | the Myriad-adapted mgp1000 folder from RDSS | `MGP1000_DIR` |
-| IgCaller | IgCaller + `IgCaller_reference_files/` | `IGCALLER_HOME` |
-| nextflow-pvacseq | v1.0.0 + IEDB + VEP plugins | `PVACSEQ_*` |
+| IgCaller | IgCaller + `IgCaller_reference_files/` + samtools wrapper (`$REF_DIR/samtools_wrapper`) | `IGCALLER_HOME`, `IGCALLER_SAMTOOLS` |
+| nextflow-pvacseq | v1.0.0 + IEDB + VEP plugins + VEP cache (v102; without it every patient downloads ~20 GB) | `PVACSEQ_*` |
 | PyClone-VI | `conda env create -f envs/pyclone-vi.yml` | — |
-| FastQC, Qualimap, MultiQC | `conda env create -f envs/qc.yml` (stage 10); optional capture BED for Qualimap | `QC_TARGET_BED` |
+| FastQC, Qualimap, MultiQC | `conda env create -f envs/qc.yml` (stage 10); Agilent V6 capture BED for Qualimap | `QC_TARGET_BED` |
+| LOHHLA | `conda env create -f envs/lohhla.yml`, then `./wes.sh lohhla setup` (once per `REF_DIR`); novoalign from Myriad's `novocraft` module | `LOHHLA_*` |
+| Pre-pulled container images | `.sif`/`.img` files Nextflow uses instead of pulling | `CONTAINER_LIBRARY` |
 | Funcotator data sources | https://console.cloud.google.com/storage/browser/gcp-public-data--broad-references/funcotator (also on RDSS) | `FUNCOTATOR_DS` |
 | MMSig | in R: https://github.com/evenrus/mmsig (calls are **hg38**; mmsig defaults to hg19) | — |
 
@@ -105,6 +111,23 @@ Point the matching variable in `config/pipeline.config` at each one.
   (`CONSENSUS_MIN_CALLERS`). Mutect2-only filtered calls + Funcotator MAFs are
   still produced by `wes.sh sarek filter_mutect2`.
 - pVACseq takes OptiType's class I typing (`HLA_SOURCE_FOR_PVACSEQ`).
+- LOHHLA (stage 11) takes the same typing by default
+  (`LOHHLA_HLA_SOURCE`) and ASCAT purity/ploidy from sarek.
+
+## Myriad workarounds the scripts apply for you
+
+- **Nextflow config parser:** newer Nextflow rejects nf-core's `ucl_myriad`
+  config, so every Nextflow job sets `NXF_SYNTAX_PARSER=v1` (`lib/common.sh`).
+- **mgp1000 reference:** each batch's `mgp1000/references/` links to the
+  shared install, except the FASTA/`.fai`/`.dict`, which point at `REF_FASTA`
+  (the reference sarek aligned to). The GATK hg38 FASTA has contigs the bams
+  lack, and Manta, Strelka and GATK refuse that.
+- **mgp1000 sample names:** sarek writes read-group `SM` as
+  `<patient>_<sample>`, but mgp1000 expects the bare sample name. The staged
+  bams get a new header with `SM:<sample>`. These are new files, so sarek's
+  own bams are not changed.
+- **mgp1000 somatic + germline together:** they share one launch folder, so
+  each one resumes its own last Nextflow session instead of a bare `-resume`.
 
 ## Still to check (marked `TODO` in the code)
 

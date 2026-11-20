@@ -33,6 +33,8 @@ flowchart LR
   bams --> qc[10 qc fastqc / qualimap]
   fq --> qc
   qc --> mqc[10 qc multiqc]
+  hcol --> loh[11 lohhla]
+  ascat --> loh
 ```
 
 ## 01 sarek
@@ -53,7 +55,12 @@ Generated sheets: `$SAMPLESHEET_DIR/sarek_fastq.csv`, `sarek_cram.csv`.
 | `somatic` | recal bams for every pair | bams hard-linked as `$MGP1000_INPUT_DIR/<S>.final.bam` (+ `.bai`), sheet `$SAMPLESHEET_DIR/mgp1000_somatic.csv`; mgp1000 writes `$MGP1000_SOMATIC_DIR/{mutect,strelka,varscan,consensus,...}/` |
 | `germline` | recal bam of every normal | sheet `$SAMPLESHEET_DIR/mgp1000_germline.csv` (one row per normal); mgp1000 writes `$MGP1000_GERMLINE_DIR/<N>.deepvariant.germline.snp.indel.vcf.gz` and ancestry `$MGP1000_GERMLINE_DIR/<N>/<N>.fastngsadmix.23.qopt` |
 
-Germline runs DeepVariant and fastNGSadmix ancestry (`MGP1000_GERMLINE_TOOLS`); fastNGSadmix needs the `fastNGSadmix_markers*` files in `$MGP1000_DIR/references/hg38/`, and the launcher warns if they are missing. The somatic tools are set by `MGP1000_SOMATIC_TOOLS` in the config
+Germline runs DeepVariant and fastNGSadmix ancestry (`MGP1000_GERMLINE_TOOLS`); fastNGSadmix needs the `fastNGSadmix_markers*` files in `$MGP1000_DIR/references/hg38/`, and the launcher warns if they are missing. Before launching, the job script prepares the batch's `MGP1000_RUN_DIR`.
+It links `containers/` and `references/` from the install, with the
+`Homo_sapiens_assembly38.fasta`/`.fai`/`.dict` pointing at `REF_FASTA`. It
+rewrites each staged bam's read-group `SM` to the bare sample name, as a new
+file, so sarek's bam is not changed. It then resumes this workflow's own last
+session, so somatic and germline can share the folder. The somatic tools are set by `MGP1000_SOMATIC_TOOLS` in the config
 (Mutect2, Strelka, VarScan, Manta, Delly, IgCaller on; Battenberg, SvABA,
 CaVEMan, Conpair and the telomere tools off). The
 preprocessing-from-FASTQ command is kept, commented, in `mgp1000.job.sh`.
@@ -98,7 +105,7 @@ by at least 2 of the 3 callers.
 | Step | Needs | Writes |
 |---|---|---|
 | `hla` | `$CONSENSUS_DIR/pvacseq_input/<P>/`, `$HLA_DIR/calls/<HLA_SOURCE_FOR_PVACSEQ>/` | `$PVACSEQ_DIR/hla/<P>.csv`: one row per tumour VCF sample, class I alleles. **Check these before `run`** |
-| `run` | the above + `PVACSEQ_PIPELINE`, IEDB, VEP plugins | `$PVACSEQ_DIR/<P>/` |
+| `run` | the above + `PVACSEQ_PIPELINE`, IEDB, VEP plugins, VEP cache (`PVACSEQ_VEP_CACHE`, used if the folder exists) | `$PVACSEQ_DIR/<P>/` |
 
 ## 08 pyclone (per patient, all timepoints together)
 
@@ -128,3 +135,14 @@ Sarek already runs FastQC, mosdepth and samtools stats when started from
 FASTQs, but not with `sarek cram`. The MultiQC report includes sarek's
 mosdepth and samtools results and leaves out sarek's FastQC, which `qc fastqc`
 repeats.
+
+## 11 lohhla (per patient, all tumours against the normal)
+
+Settings are the `LOHHLA_*` lines in `config/pipeline.config`. How to read the output, and what is still untested: [LOHHLA.md](LOHHLA.md).
+
+| Step | Needs | Writes |
+|---|---|---|
+| `setup` (once) | `lohhla` conda env, novocraft module | `$REF_DIR/lohhla/`: LOHHLA clone, hg38-patched `LOHHLAscript.hg38.R`, IMGT `imgt/hla_abc_gen.fasta` + `hla.dat` |
+| `inputs` | recal bams, ASCAT `*.purityploidy.txt`, `$HLA_DIR/calls/<LOHHLA_HLA_SOURCE>/` | `$BATCH_DIR/LOHHLA/<P>/input/{bams/,hla_alleles.txt,solutions.txt}`. **Check these before `run`** |
+| `run [patient...]` | the above | `$BATCH_DIR/LOHHLA/<P>/`: `*.HLAlossPrediction_CI.xls`, `Figures/`, log |
+| `summary` | finished patients | `$BATCH_DIR/LOHHLA/LOHHLA_summary.tsv`, `LOHHLA_summary_wide.tsv` (LOH / imbalance / no_change per tumour × gene) |
