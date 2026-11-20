@@ -74,27 +74,74 @@ cp -r <RDSS>/.../PRG_MHC_GRCh38_withIMGT \
 
 ### A5. Tools and references from the RDSS
 
-Copy every item below into one folder, `~/Scratch/AMATTA/reference_files`
-(`REF_DIR`). It holds programs and references only and is shared by every
-batch: each stage is launched from the batch folder, so Nextflow `work/`,
-intermediate and final files all go under `$BATCH_DIR`. If you put anything
-elsewhere, point its variable in `config/pipeline.config` at it.
+Everything the pipeline needs is on the lab RDSS, in two folders:
 
-| What | Config variable |
-|---|---|
-| GRCh38 no-alt FASTA + `.fai` | `REF_FASTA`, `REF_FAI` |
-| dbSNP, Mills indels, gnomAD AF, panel of normals | `DBSNP`, `KNOWN_INDELS`, `GNOMAD_AF`, `PON` |
-| Funcotator data sources | `FUNCOTATOR_DS` |
-| ASCAT loci/alleles/GC/RT, mappability, Control-FREEC chr files | `ASCAT_*`, `MAPPABILITY`, `CONTROLFREEC_CHR_DIR` |
-| T1K folder (has `hlaidx/`, `kiridx/`) | `T1K_DIR` |
-| KIRCLE folder (has `KIRCLE/`, `ref_files/`) | `KIRCLE_DIR` |
-| patched nf-core/hlatyping checkout (`hlatyping-patched/`) + `hlahd.1.7.1.tar.gz` | `HLATYPING_DIR`, `HLAHD_TARBALL` |
-| Myriad-adapted mgp1000 folder | `MGP1000_DIR` |
-| IgCaller + `IgCaller_reference_files/` + `samtools_wrapper` | `IGCALLER_HOME`, `IGCALLER_SAMTOOLS` |
-| nextflow-pvacseq v1.0.0, IEDB, VEP plugins | `PVACSEQ_PIPELINE`, `PVACSEQ_IEDB`, `PVACSEQ_VEP_PLUGINS` |
-| VEP cache, version 102 (`vep_cache/`). Without it, every patient's pVACseq run downloads ~20 GB | `PVACSEQ_VEP_CACHE`, `PVACSEQ_VEP_CACHE_VERSION` |
-| exome capture BED (Agilent V6 padded, hg38), for Qualimap | `QC_TARGET_BED` |
-| pre-pulled apptainer images (optional; Nextflow pulls anything missing) | `CONTAINER_LIBRARY` |
+- `/rdss/rd02/ritd-ag-project-rd028n-amira43/reference_files/WES_pipeline`: genome, variant resources, ASCAT, Control-FREEC, capture BED, container images
+- `/rdss/rd02/ritd-ag-project-rd028n-amira43/Shared_Scripts`: tools (mgp1000, T1K, KIRCLE, hlatyping, HLA-HD, IgCaller, IEDB, VEP plugins)
+
+**Jobs don't read the RDSS.** Copy both into one folder on Scratch,
+`~/Scratch/AMATTA/reference_files` (`REF_DIR`), and unpack the zips **before
+running anything**. `REF_DIR` holds programs and references only, and every
+batch shares it. Each stage is launched from the batch folder, so Nextflow
+`work/` and all intermediate and final files go under `$BATCH_DIR`.
+
+```bash
+RDSS=/rdss/rd02/ritd-ag-project-rd028n-amira43
+REF=~/Scratch/AMATTA/reference_files
+mkdir -p $REF && cd $REF
+
+# 1. references, as they are (the Funcotator folder is already unzipped there)
+rsync -a --info=progress2 --exclude 'funcotator_dataSources*.zip' $RDSS/reference_files/WES_pipeline/ $REF/
+
+# 2. tools: folders as they are, zips unpacked (annovar and pyclone are not needed)
+rsync -a --info=progress2 --exclude '*.zip' --exclude annovar --exclude pyclone \
+      $RDSS/Shared_Scripts/ $REF/
+for z in mgp1000 T1K KIRCLE IgCaller samtools_wrapper VEP_plugins; do
+    unzip -qn $RDSS/Shared_Scripts/$z.zip -d $REF
+done
+chmod +x $REF/samtools_wrapper
+
+# 3. reference archives the config reads as folders
+unzip -qn ASCAT.zip                  # -> ASCAT/ with the 4 battenberg/GC/RT zips (leave those zipped)
+unzip -qn chrfiles_controlfreec.zip  # -> chrfiles_controlfreec/
+```
+
+`hlahd.1.7.1.tar.gz` stays a tarball. The ASCAT files inside `ASCAT/` stay
+zipped too, because sarek reads them that way.
+
+Then **check that everything is where the config expects**. Fix each
+`MISSING` line, either by renaming the folder (for example, `T1K.zip` might
+unpack as `T1K/` instead of `T1K-1.0.10/`) or by changing that line in
+`config/pipeline.config`:
+
+```bash
+cd ~/Scratch/MyelomaLab_WES_Pipeline
+./wes.sh check
+```
+
+| What | Config variable | From |
+|---|---|---|
+| GRCh38 no-alt FASTA + `.fai` + `.dict` | `REF_FASTA`, `REF_FAI` | `reference_files` |
+| dbSNP, Mills indels, gnomAD AF, panel of normals | `DBSNP`, `KNOWN_INDELS`, `GNOMAD_AF`, `PON` | `reference_files` |
+| Funcotator data sources (folder) | `FUNCOTATOR_DS` | `reference_files` |
+| `ASCAT/` (battenberg loci/alleles, GC, RT zips) | `ASCAT_*` | `reference_files/ASCAT.zip` |
+| mappability `out100m2_hg38.gem`, `chrfiles_controlfreec/` | `MAPPABILITY`, `CONTROLFREEC_CHR_DIR` | `reference_files` (unzip the chr files) |
+| Agilent V6 capture BED, 6 columns, for Qualimap | `QC_TARGET_BED` | `reference_files` |
+| pre-pulled apptainer images (`*.img`; Nextflow pulls anything missing) | `CONTAINER_LIBRARY` | `reference_files` |
+| `T1K-1.0.10/` (has `hlaidx/`, `kiridx/`) | `T1K_DIR` | `Shared_Scripts/T1K.zip` |
+| `KIRCLE/` (has `KIRCLE/`, `ref_files/`) | `KIRCLE_DIR` | `Shared_Scripts/KIRCLE.zip` |
+| `hlatyping-patched/` + `hlahd.1.7.1.tar.gz` | `HLATYPING_DIR`, `HLAHD_TARBALL` | `Shared_Scripts` |
+| `mgp1000/` (Myriad-adapted; has `references/`, `containers/`) | `MGP1000_DIR` | `Shared_Scripts/mgp1000.zip` |
+| `IgCaller/` (has `IgCaller_reference_files/`) + `samtools_wrapper` | `IGCALLER_HOME`, `IGCALLER_SAMTOOLS` | `Shared_Scripts` zips |
+| `iedb/`, `VEP_plugins/` | `PVACSEQ_IEDB`, `PVACSEQ_VEP_PLUGINS` | `Shared_Scripts` |
+| `nextflow-pvacseq-v.1.0.0/` (has `main.nf`) | `PVACSEQ_PIPELINE` | RDSS |
+| `vep_cache/` (VEP 102, has `homo_sapiens/102_GRCh38/`). Without it, every patient's pVACseq run downloads ~20 GB | `PVACSEQ_VEP_CACHE` | RDSS |
+| `lohhla/` | `LOHHLA_HOME` | made by `./wes.sh lohhla setup` (A6) |
+
+The pVACseq pipeline and the VEP cache are large. If either is a `.zip` or
+`.tar.gz` on the RDSS, the commands above don't unpack it. Unpack it into
+`$REF` the same way, so `$REF/nextflow-pvacseq-v.1.0.0/main.nf` and
+`$REF/vep_cache/homo_sapiens/` exist.
 
 Qualimap needs a 6-column BED (chrom, start, end, name, score, strand). If
 yours has 3 or 4 columns, pad it once:
@@ -103,6 +150,14 @@ yours has 3 or 4 columns, pad it once:
 awk 'BEGIN { OFS = "\t" } !/^(#|track|browser)/ { print $1, $2, $3, "t" NR, 0, "+" }' \
     Exome-Agilent_V6_Padded_hg38.bed > Exome-Agilent_V6_Padded_hg38.6col.bed
 ```
+
+### A6. LOHHLA install (once per `REF_DIR`)
+
+```bash
+./wes.sh lohhla setup   # clones LOHHLA, patches it for hg38, downloads IMGT HLA files into $REF_DIR/lohhla
+```
+
+### A7. R packages
 
 For R (PyClone summaries, MMSig), `module load r`, then install `data.table`
 and `ggplot2` once from R.
@@ -113,20 +168,25 @@ and `ggplot2` once from R.
 
 ### B1. A config for the batch
 
+Pick a name for the batch (for example `WES_tumor_batch2`). That name is the
+batch's working directory: `~/Scratch/AMATTA/<batch name>/`.
+
+In `config/pipeline.config`, set:
+
+```bash
+BATCH_NAME=WES_tumor_batch2
+```
+
+`SAMPLES` already points at `$HOME/Scratch/AMATTA/$BATCH_NAME/samples.tsv`,
+so make that folder and start the sample sheet from the template:
+
 ```bash
 cd ~/Scratch/MyelomaLab_WES_Pipeline
-config/pipeline.config
-cp config/samples.tsv     [BATCH WORKING DIRECTORY]/samples.tsv
+mkdir -p ~/Scratch/AMATTA/WES_tumor_batch2
+cp config/samples.tsv ~/Scratch/AMATTA/WES_tumor_batch2/samples.tsv
 ```
 
-In `config/pipeline.config`, change:
-
-```bash
-BATCH_NAME=BATCH WORKING DIRECTORY NAME
-SAMPLES=[BATCH WORKINGD IRECTORY]/samples.tsv
-```
-
-Every output then goes under `~/Scratch/[BATCH WORKING IRECTORY]`. Then, for this shell:
+Every output then goes under `~/Scratch/AMATTA/WES_tumor_batch2/`. Then, for this shell:
 
 ```bash
 export PIPELINE_CONFIG=~/Scratch/MyelomaLab_WES_Pipeline/config/pipeline.config
@@ -134,7 +194,7 @@ export PIPELINE_CONFIG=~/Scratch/MyelomaLab_WES_Pipeline/config/pipeline.config
 
 ### B2. The sample sheet
 
-Fill samples.tsv` with **one row per FASTQ pair (lane)**.
+Fill `samples.tsv` with **one row per FASTQ pair (lane)**.
 It's tab-separated and keeps the header row.
 
 | patient | sample | status | sex | lane | fastq_1 | fastq_2 | cram | bam |

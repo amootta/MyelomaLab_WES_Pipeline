@@ -194,7 +194,7 @@ td.mono { font-family: var(--f-mono); font-size: 0.8rem; white-space: nowrap; }
   </div>
   <ol class="checklist col" data-list="install">
     <li class="check"><input type="checkbox" id="i-access"><div class="body"><label for="i-access">Get access</label>
-      <p>A Myriad account (<a href="https://www.rc.ucl.ac.uk/docs/Clusters/Myriad/" target="_blank" rel="noopener">UCL RC docs</a>), plus the lab RDSS project. Ask Amatta to add you. References are under <code>reference_files</code> and tool installs are under <code>Shared_Scripts</code>:</p>
+      <p>A Myriad account (<a href="https://www.rc.ucl.ac.uk/docs/Clusters/Myriad/" target="_blank" rel="noopener">UCL RC docs</a>), plus the lab RDSS project. Ask Amatta to add you. References are under <code>reference_files/WES_pipeline</code> and tool installs are under <code>Shared_Scripts</code>:</p>
       <div class="code has-copy"><pre>/rdss/rd02/ritd-ag-project-rd028n-amira43/</pre></div></div></li>
 
     <li class="check"><input type="checkbox" id="i-clone"><div class="body"><label for="i-clone">Get the pipeline</label>
@@ -223,26 +223,43 @@ conda env create -f envs/qc.yml           <span class="c"># FastQC, Qualimap, Mu
 conda env create -f envs/lohhla.yml       <span class="c"># LOHHLA</span></pre></div>
       <p>HLA-LA also needs its graph. Copy <code>PRG_MHC_GRCh38_withIMGT</code> from the RDSS into <code>~/Scratch/miniforge3/envs/hla-la/opt/hla-la/graphs/</code>.</p></div></li>
 
-    <li class="check"><input type="checkbox" id="i-tools"><div class="body"><label for="i-tools">Copy tools and references from the RDSS</label>
-      <p>Copy each one into <code>~/Scratch/AMATTA/reference_files</code> (<code>REF_DIR</code>), then check its line in <code>config/pipeline.config</code>. This folder holds programs and references only, and every batch shares it.</p>
+    <li class="check"><input type="checkbox" id="i-tools"><div class="body"><label for="i-tools">Copy tools and references from the RDSS to Scratch</label>
+      <p>Everything the pipeline needs is in two RDSS folders: <code>reference_files/WES_pipeline</code> (references) and <code>Shared_Scripts</code> (tools, mostly zipped).</p>
+      <div class="note"><strong>Do this before running anything.</strong> Jobs read from Scratch, not from the RDSS. Copy both folders into <code>~/Scratch/AMATTA/reference_files</code> (<code>REF_DIR</code>) and unzip the zips there. Every batch shares this folder.</div>
+      <div class="code has-copy"><pre>RDSS=/rdss/rd02/ritd-ag-project-rd028n-amira43
+REF=~/Scratch/AMATTA/reference_files
+mkdir -p $REF &amp;&amp; cd $REF
+
+rsync -a --info=progress2 --exclude 'funcotator_dataSources*.zip' $RDSS/reference_files/WES_pipeline/ $REF/
+rsync -a --info=progress2 --exclude '*.zip' --exclude annovar --exclude pyclone $RDSS/Shared_Scripts/ $REF/
+for z in mgp1000 T1K KIRCLE IgCaller samtools_wrapper VEP_plugins; do unzip -qn $RDSS/Shared_Scripts/$z.zip -d $REF; done
+chmod +x $REF/samtools_wrapper
+unzip -qn ASCAT.zip                  <span class="c"># ASCAT/: leave the 4 zips inside zipped</span>
+unzip -qn chrfiles_controlfreec.zip  <span class="c"># chrfiles_controlfreec/</span></pre></div>
+      <p>Keep <code>hlahd.1.7.1.tar.gz</code> as a tarball. The pVACseq pipeline and the VEP 102 cache are large. If either is a <code>.zip</code> or <code>.tar.gz</code> on the RDSS, unpack it into <code>$REF</code> the same way, so <code>nextflow-pvacseq-v.1.0.0/main.nf</code> and <code>vep_cache/homo_sapiens/</code> exist. The copy takes a while, so run it in <code>screen</code>.</p>
       <div class="tbl"><table>
-        <thead><tr><th>What</th><th>Config line</th></tr></thead>
+        <thead><tr><th>Should end up in REF_DIR</th><th>Config line</th><th>From</th></tr></thead>
         <tbody>
-          <tr><td>GRCh38 no-alt FASTA + .fai</td><td class="mono">REF_FASTA, REF_FAI</td></tr>
-          <tr><td>dbSNP, Mills indels, gnomAD AF, panel of normals</td><td class="mono">DBSNP, KNOWN_INDELS, GNOMAD_AF, PON</td></tr>
-          <tr><td>Funcotator data sources</td><td class="mono">FUNCOTATOR_DS</td></tr>
-          <tr><td>ASCAT loci/alleles/GC/RT, mappability, Control-FREEC chr files</td><td class="mono">ASCAT_*, MAPPABILITY, CONTROLFREEC_CHR_DIR</td></tr>
-          <tr><td>T1K folder (hlaidx/, kiridx/)</td><td class="mono">T1K_DIR</td></tr>
-          <tr><td>KIRCLE folder</td><td class="mono">KIRCLE_DIR</td></tr>
-          <tr><td>Patched hlatyping checkout (hlatyping-patched/) + hlahd.1.7.1.tar.gz</td><td class="mono">HLATYPING_DIR, HLAHD_TARBALL</td></tr>
-          <tr><td>Myriad-adapted mgp1000 folder</td><td class="mono">MGP1000_DIR</td></tr>
-          <tr><td>IgCaller + reference files + samtools_wrapper</td><td class="mono">IGCALLER_HOME, IGCALLER_SAMTOOLS</td></tr>
-          <tr><td>nextflow-pvacseq v1.0.0, IEDB, VEP plugins</td><td class="mono">PVACSEQ_PIPELINE, PVACSEQ_IEDB, PVACSEQ_VEP_PLUGINS</td></tr>
-          <tr><td>VEP cache v102 (vep_cache/). Without it, every patient's pVACseq run downloads ~20 GB</td><td class="mono">PVACSEQ_VEP_CACHE, PVACSEQ_VEP_CACHE_VERSION</td></tr>
-          <tr><td>Agilent V6 capture BED (6 columns), for Qualimap</td><td class="mono">QC_TARGET_BED</td></tr>
-          <tr><td>Pre-pulled apptainer images (optional; anything missing is pulled)</td><td class="mono">CONTAINER_LIBRARY</td></tr>
+          <tr><td>GRCh38 no-alt FASTA + .fai + .dict</td><td class="mono">REF_FASTA, REF_FAI</td><td>reference_files</td></tr>
+          <tr><td>dbSNP, Mills indels, gnomAD AF, panel of normals</td><td class="mono">DBSNP, KNOWN_INDELS, GNOMAD_AF, PON</td><td>reference_files</td></tr>
+          <tr><td>funcotator_dataSources…/ (folder)</td><td class="mono">FUNCOTATOR_DS</td><td>reference_files</td></tr>
+          <tr><td>ASCAT/ (loci, alleles, GC, RT zips)</td><td class="mono">ASCAT_*</td><td>reference_files/ASCAT.zip</td></tr>
+          <tr><td>out100m2_hg38.gem, chrfiles_controlfreec/</td><td class="mono">MAPPABILITY, CONTROLFREEC_CHR_DIR</td><td>reference_files</td></tr>
+          <tr><td>Exome-Agilent_V6_Padded_hg38.bed</td><td class="mono">QC_TARGET_BED</td><td>reference_files</td></tr>
+          <tr><td>*.img container images</td><td class="mono">CONTAINER_LIBRARY</td><td>reference_files</td></tr>
+          <tr><td>T1K-1.0.10/ (hlaidx/, kiridx/)</td><td class="mono">T1K_DIR</td><td>Shared_Scripts/T1K.zip</td></tr>
+          <tr><td>KIRCLE/</td><td class="mono">KIRCLE_DIR</td><td>Shared_Scripts/KIRCLE.zip</td></tr>
+          <tr><td>hlatyping-patched/ + hlahd.1.7.1.tar.gz</td><td class="mono">HLATYPING_DIR, HLAHD_TARBALL</td><td>Shared_Scripts</td></tr>
+          <tr><td>mgp1000/ (references/, containers/)</td><td class="mono">MGP1000_DIR</td><td>Shared_Scripts/mgp1000.zip</td></tr>
+          <tr><td>IgCaller/ + samtools_wrapper</td><td class="mono">IGCALLER_HOME, IGCALLER_SAMTOOLS</td><td>Shared_Scripts zips</td></tr>
+          <tr><td>iedb/, VEP_plugins/</td><td class="mono">PVACSEQ_IEDB, PVACSEQ_VEP_PLUGINS</td><td>Shared_Scripts</td></tr>
+          <tr><td>nextflow-pvacseq-v.1.0.0/ (main.nf)</td><td class="mono">PVACSEQ_PIPELINE</td><td>RDSS</td></tr>
+          <tr><td>vep_cache/ (VEP 102: homo_sapiens/102_GRCh38/)</td><td class="mono">PVACSEQ_VEP_CACHE</td><td>RDSS</td></tr>
         </tbody>
-      </table></div></div></li>
+      </table></div>
+      <p><strong>Then make sure everything is there.</strong> Fix each <code>MISSING</code> line, either by renaming the folder (for example, <code>T1K.zip</code> might unpack as <code>T1K/</code>) or by changing that line in <code>config/pipeline.config</code>. Keep going until it ends with <code>All good.</code></p>
+      <div class="code has-copy"><pre>cd ~/Scratch/MyelomaLab_WES_Pipeline
+./wes.sh check</pre></div></div></li>
 
     <li class="check"><input type="checkbox" id="i-lohhla"><div class="body"><label for="i-lohhla">Install LOHHLA</label>
       <div class="code has-copy"><pre>./wes.sh lohhla setup</pre></div>
@@ -260,15 +277,15 @@ conda env create -f envs/lohhla.yml       <span class="c"># LOHHLA</span></pre><
     <span class="progress" id="prog-batch"></span>
   </div>
   <ol class="checklist col" data-list="batch">
-    <li class="check"><input type="checkbox" id="b-config"><div class="body"><label for="b-config">Make a config for the batch</label>
+    <li class="check"><input type="checkbox" id="b-config"><div class="body"><label for="b-config">Name the batch</label>
+      <p>In <code>config/pipeline.config</code>, set the batch name. That name is the batch's working directory, so everything writes to <code>~/Scratch/AMATTA/WES_tumor_batch2/</code>.</p>
+      <div class="code"><pre>BATCH_NAME=WES_tumor_batch2</pre></div>
+      <p><code>SAMPLES</code> already points at <code>$HOME/Scratch/AMATTA/$BATCH_NAME/samples.tsv</code>. Make that folder and start the sample sheet from the template:</p>
       <div class="code has-copy"><pre>cd ~/Scratch/MyelomaLab_WES_Pipeline
-cp config/pipeline.config config/batch2.config
-cp config/samples.tsv     config/batch2_samples.tsv</pre></div>
-      <p>In <code>batch2.config</code>, change two lines. Everything then writes to <code>~/Scratch/AMATTA/WES_tumor_batch2/</code>.</p>
-      <div class="code"><pre>BATCH_NAME=WES_tumor_batch2
-SAMPLES=$PIPELINE_DIR/config/batch2_samples.tsv</pre></div>
-      <p>Tell <code>wes.sh</code> which batch you're on (once per login):</p>
-      <div class="code has-copy"><pre>export PIPELINE_CONFIG=$PWD/config/batch2.config</pre></div></div></li>
+mkdir -p ~/Scratch/AMATTA/WES_tumor_batch2
+cp config/samples.tsv ~/Scratch/AMATTA/WES_tumor_batch2/samples.tsv</pre></div>
+      <p>Tell <code>wes.sh</code> which config to use (once per login):</p>
+      <div class="code has-copy"><pre>export PIPELINE_CONFIG=~/Scratch/MyelomaLab_WES_Pipeline/config/pipeline.config</pre></div></div></li>
 
     <li class="check"><input type="checkbox" id="b-sheet"><div class="body"><label for="b-sheet">Fill in the sample sheet</label>
       <p>Tab-separated, one row per FASTQ pair (lane). Keep the header row.</p>
@@ -352,7 +369,8 @@ SAMPLES=$PIPELINE_DIR/config/batch2_samples.tsv</pre></div>
 ./wes.sh kir concordance   <span class="c"># optional</span></pre></div></div>
           <div class="cmdrow"><span class="what">After mgp1000: variants called by at least 2 of the 3 callers. Only this batch's pairs are taken from the shared mgp1000 folder. <span class="pill" style="color:var(--g-somatic)">03 consensus</span></span><div class="code has-copy"><pre>./wes.sh consensus vcf     <span class="c"># per-tumour VCFs: pVACseq, PyClone</span>
 ./wes.sh consensus isec    <span class="c"># variant tables: signatures</span></pre></div></div>
-          <div class="cmdrow"><span class="what">After the QC jobs: one report with FastQC, Qualimap and sarek's own metrics <span class="pill" style="color:var(--g-sarek)">10 qc</span></span><div class="code has-copy"><pre>./wes.sh qc multiqc        <span class="c"># QC/multiqc/multiqc_report.html</span></pre></div></div>
+          <div class="cmdrow"><span class="what">After the QC jobs: one report with FastQC, Qualimap and sarek's own metrics <span class="pill" style="color:var(--g-sarek)">10 qc</span></span><div class="code has-copy"><pre>./wes.sh qc multiqc        <span class="c"># QC/multiqc/multiqc_report.html</span>
+HOLD=fastqc,qualimap ./wes.sh qc multiqc   <span class="c"># or: queue it now, held until both finish</span></pre></div></div>
         </div>
       </div>
     </div>

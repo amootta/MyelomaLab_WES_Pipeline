@@ -81,10 +81,20 @@ sarek, hlatyping, mgp1000 and PyClone sheets are generated from this file.
 
 ## Installing the tools
 
-Shared installs and references live on the RDSS (ask Amatta for access):
-`/rdss/rd02/ritd-ag-project-rd028n-amira43/Shared_Scripts` (packages) and
-`/rdss/rd02/ritd-ag-project-rd028n-amira43/reference_files` (references).
-Point the matching variable in `config/pipeline.config` at each one.
+Everything the pipeline needs is on the lab RDSS (ask Amatta for access):
+
+- `/rdss/rd02/ritd-ag-project-rd028n-amira43/reference_files/WES_pipeline`: references
+- `/rdss/rd02/ritd-ag-project-rd028n-amira43/Shared_Scripts`: tool installs, mostly as `.zip`
+
+> **Before running anything:** copy both folders into
+> `~/Scratch/AMATTA/reference_files` (`REF_DIR`) and unzip the zips there
+> (`mgp1000`, `T1K`, `KIRCLE`, `IgCaller`, `samtools_wrapper`, `VEP_plugins`,
+> `ASCAT`, `chrfiles_controlfreec`). Jobs read from Scratch, not from the
+> RDSS. Then run `./wes.sh check` and fix every `MISSING` line until it says
+> `All good.`. The exact copy and unzip commands are in
+> [docs/GETTING_STARTED.md § A5](docs/GETTING_STARTED.md#a5-tools-and-references-from-the-rdss).
+
+Each row's config variable points into `REF_DIR`.
 
 | Tool | Install | Config variable |
 |---|---|---|
@@ -97,7 +107,7 @@ Point the matching variable in `config/pipeline.config` at each one.
 | HLA-HD | `hlahd.1.7.1.tar.gz` from RDSS (passed to hlatyping as `--hlahd_path`) | `HLAHD_TARBALL` |
 | MGP1000 | the Myriad-adapted mgp1000 folder from RDSS | `MGP1000_DIR` |
 | IgCaller | IgCaller + `IgCaller_reference_files/` + samtools wrapper (`$REF_DIR/samtools_wrapper`) | `IGCALLER_HOME`, `IGCALLER_SAMTOOLS` |
-| nextflow-pvacseq | v1.0.0 + IEDB + VEP plugins + VEP cache (v102; without it every patient downloads ~20 GB) | `PVACSEQ_*` |
+| nextflow-pvacseq | v1.0.0 + IEDB + VEP plugins + VEP 102 cache, all on the RDSS (without the cache, every patient downloads ~20 GB) | `PVACSEQ_*` |
 | PyClone-VI | `conda env create -f envs/pyclone-vi.yml` | — |
 | FastQC, Qualimap, MultiQC | `conda env create -f envs/qc.yml` (stage 10); Agilent V6 capture BED for Qualimap | `QC_TARGET_BED` |
 | LOHHLA | `conda env create -f envs/lohhla.yml`, then `./wes.sh lohhla setup` (once per `REF_DIR`); novoalign from Myriad's `novocraft` module | `LOHHLA_*` |
